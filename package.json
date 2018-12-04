@@ -1,0 +1,32 @@
+{
+  "name": "prisoners-api",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www",
+    "lint": "standard --fix \"bin/**/*\" \"src/**/*.js\" \"test/**/*.js\"",
+    "dev": "cross-env DEBUG=prisoners:* nodemon --watch src --watch bin ./bin/www",
+    "cmd": "cross-env DEBUG=prisoners:* node ./bin/cmd",
+    "test": "mocha \"test/**/*.js\""
+  },
+  "dependencies": {
+    "commander": "^2.19.0",
+    "cookie-parser": "~1.4.3",
+    "cross-env": "^5.2.0",
+    "date-fns": "^1.29.0",
+    "debug": "~2.6.9",
+    "dotenv": "^6.1.0",
+    "ejs": "~2.5.7",
+    "express": "~4.16.0",
+    "http-errors": "~1.6.2",
+    "lodash": "^4.17.11",
+    "morgan": "~1.9.0",
+    "socket.io": "^2.1.1"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "mocha": "^5.2.0",
+    "nodemon": "^1.18.6",
+    "standard": "^12.0.1"
+  }
+}
