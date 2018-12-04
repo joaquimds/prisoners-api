@@ -17,8 +17,14 @@ const socketService = {
   },
 
   addClient: (id, client) => {
-    debug('new player', id)
+    debug('add client', id)
     socketService._clients[id] = client
+
+    client.on('reset', () => {
+      dilemmaService.removePlayer(id)
+      const dilemma = dilemmaService.newPlayer(id)
+      socketService.emitDilemma(dilemma)
+    })
 
     client.on('message', message => {
       socketService.sendMessage(id, message)
@@ -31,30 +37,31 @@ const socketService = {
 
     client.on('disconnect', () => {
       debug('disconnect', id)
-      dilemmaService.removePlayer(id)
+      const dilemma = dilemmaService.removePlayer(id)
       delete socketService._clients[id]
       socketService.emitDilemma(dilemma)
     })
-
-    const dilemma = dilemmaService.newPlayer(id)
-    socketService.emitDilemma(dilemma)
   },
 
   emitDilemma: (dilemma) => {
-    dilemma.players.forEach(player => {
-      const client = socketService._clients[player.id]
-      client.emit('dilemma', dilemma.summary())
-    })
+    if (dilemma) {
+      dilemma.players.forEach(player => {
+        const client = socketService._clients[player.id]
+        client.emit('dilemma', dilemma.summary(player.id))
+      })
+    }
   },
 
   sendMessage: (senderId, message) => {
     const dilemma = dilemmaService.getDilemma(senderId)
-    dilemma.players.forEach(player => {
-      if (player.id !== senderId) {
-        const client = socketService._clients[player.id]
-        client.emit('message', message)
-      }
-    })
+    if (dilemma) {
+      dilemma.players.forEach(player => {
+        if (player.id !== senderId) {
+          const client = socketService._clients[player.id]
+          client.emit('message', message)
+        }
+      })
+    }
   }
 }
 

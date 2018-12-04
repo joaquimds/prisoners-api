@@ -1,5 +1,7 @@
 const { choices, outcomes } = require('../constants')
 
+const validChoices = Object.keys(choices).map(c => choices[c])
+
 class Dilemma {
   constructor () {
     this.players = []
@@ -13,21 +15,22 @@ class Dilemma {
   }
 
   removePlayer (id) {
-    this.players = this.players.filter(p => p.id !== id)
     delete this.choices[id]
+    this.players = this.players.filter(p => p.id !== id)
   }
 
   applyChoice (playerId, choice) {
-    if (this.choices[playerId]) {
+    if (Object.keys(this.choices).length === this.players.length) {
+      return
+    }
+
+    if (validChoices.indexOf(choice) === -1) {
       return
     }
 
     this.choices[playerId] = choice
-    this.outcome = outcomes.pending
-    this.winner = null
-
-    const choicePlayerIds = Object.keys(this.choices)
-    if (choicePlayerIds.length === this.players.length) {
+    const choicePlayerIds = Object.keys(this.choices).map(id => parseInt(id, 10))
+    if (choicePlayerIds.length === 2 && choicePlayerIds.length === this.players.length) {
       let playerIdsByChoice = {
         [choices.steal]: [],
         [choices.split]: []
@@ -50,11 +53,12 @@ class Dilemma {
     }
   }
 
-  summary () {
+  summary (playerId) {
     return {
       players: this.players.length,
       outcome: this.outcome,
-      winner: this.winner
+      hasChosen: Boolean(this.choices[playerId]),
+      hasWon: playerId === this.winner
     }
   }
 }

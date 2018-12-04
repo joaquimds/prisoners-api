@@ -1,12 +1,12 @@
 module.exports = {
   choices: {
-    split: 'split',
-    steal: 'steal'
+    split: 'Split',
+    steal: 'Steal'
   },
   outcomes: {
-    pending: 'pending',
-    split: 'split',
-    steal: 'steal',
-    lose: 'lose'
+    pending: 'Pending',
+    split: 'Split',
+    steal: 'Steal',
+    lose: 'Lose'
   }
 }
