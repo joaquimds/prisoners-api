@@ -8,13 +8,18 @@ class Dilemma {
     this.choices = {}
     this.outcome = outcomes.pending
     this.winner = null
+    this.readyTimestamp = null
   }
 
   addPlayer (player) {
     this.players.push(player)
+    if (this.players.length === 2) {
+      this.readyTimestamp = Date.now() + 10 * 1000
+    }
   }
 
   removePlayer (id) {
+    this.readyTimestamp = null
     delete this.choices[id]
     this.players = this.players.filter(p => p.id !== id)
   }
@@ -25,6 +30,10 @@ class Dilemma {
     }
 
     if (validChoices.indexOf(choice) === -1) {
+      return
+    }
+
+    if (!this.readyTimestamp || Date.now() < this.readyTimestamp) {
       return
     }
 
@@ -58,7 +67,8 @@ class Dilemma {
       players: this.players.length,
       outcome: this.outcome,
       hasChosen: Boolean(this.choices[playerId]),
-      hasWon: playerId === this.winner
+      hasWon: playerId === this.winner,
+      readyTimestamp: this.readyTimestamp
     }
   }
 }
