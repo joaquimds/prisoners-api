@@ -1,74 +1,95 @@
 const { choices, outcomes } = require('../constants')
 
 const validChoices = Object.keys(choices).map(c => choices[c])
+const idleTime = parseFloat(process.env.DILEMMA_IDLE_TIME)
 
 class Dilemma {
-  constructor () {
+  constructor (id) {
+    this.id = id
     this.players = []
     this.choices = {}
-    this.outcome = outcomes.pending
-    this.winner = null
     this.readyTimestamp = null
   }
 
   addPlayer (player) {
+    if (this.players.length > 1) {
+      throw new Error('Could not add new player')
+    }
     this.players.push(player)
     if (this.players.length === 2) {
-      this.readyTimestamp = Date.now() + 10 * 1000
+      this.readyTimestamp = Date.now() + idleTime * 1000
     }
   }
 
   removePlayer (id) {
-    this.readyTimestamp = null
-    delete this.choices[id]
     this.players = this.players.filter(p => p.id !== id)
+    const choiceCount = Object.keys(this.choices).length
+    if (choiceCount < 2) {
+      this.readyTimestamp = null
+      delete this.choices[id]
+    }
   }
 
-  applyChoice (playerId, choice) {
-    if (Object.keys(this.choices).length === this.players.length) {
-      return
+  setChoice (playerId, choice) {
+    if (validChoices.indexOf(choice) === -1) {
+      throw new Error('Invalid choice')
     }
 
-    if (validChoices.indexOf(choice) === -1) {
-      return
+    const player = this.players.find(({ id }) => id === playerId)
+    if (!player) {
+      throw new Error('Invalid player id')
+    }
+
+    const choiceCount = Object.keys(this.choices).length
+    if (this.choices[playerId] && choiceCount === this.players.length) {
+      throw new Error('Can\'t change choice as all players have chosen')
     }
 
     if (!this.readyTimestamp || Date.now() < this.readyTimestamp) {
-      return
+      throw new Error('Can\'t choose yet')
     }
 
     this.choices[playerId] = choice
-    const choicePlayerIds = Object.keys(this.choices).map(id => parseInt(id, 10))
-    if (choicePlayerIds.length === 2 && choicePlayerIds.length === this.players.length) {
-      let playerIdsByChoice = {
-        [choices.steal]: [],
-        [choices.split]: []
-      }
-      for (const playerId of choicePlayerIds) {
-        const choice = this.choices[playerId]
-        playerIdsByChoice[choice].push(playerId)
-      }
-      const stealCount = playerIdsByChoice[choices.steal].length
-      if (stealCount > 0) {
-        if (stealCount > 1) {
-          this.outcome = outcomes.lose
-          return
-        }
-        this.outcome = outcomes.steal
-        this.winner = playerIdsByChoice[choices.steal][0]
-        return
-      }
-      this.outcome = outcomes.split
+  }
+
+  getOutcome () {
+    const playerChoices = Object.keys(this.choices).map(playerId => this.choices[playerId])
+    if (playerChoices.length < 2) {
+      return outcomes.pending
     }
+    const stealCount = playerChoices.filter(choice => choice === choices.steal).length
+    if (stealCount === 0) {
+      return outcomes.split
+    }
+    if (stealCount === 1) {
+      return outcomes.steal
+    }
+    return outcomes.lose
+  }
+
+  hasWon (playerId, outcome = this.getOutcome()) {
+    if (outcome === outcomes.split) {
+      return true
+    }
+    if (outcome === outcomes.steal) {
+      return this.choices[playerId] === outcomes.steal
+    }
+    return false
   }
 
   summary (playerId) {
+    const players = this.players.length
+    const outcome = this.getOutcome()
+    const hasChosen = Boolean(this.choices[playerId])
+    const hasWon = this.hasWon(playerId, outcome)
+    const readyTimestamp = this.readyTimestamp
+
     return {
-      players: this.players.length,
-      outcome: this.outcome,
-      hasChosen: Boolean(this.choices[playerId]),
-      hasWon: playerId === this.winner,
-      readyTimestamp: this.readyTimestamp
+      players,
+      outcome,
+      hasChosen,
+      hasWon,
+      readyTimestamp
     }
   }
 }

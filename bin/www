@@ -9,7 +9,7 @@ const app = require('../src/server/app')
 const debug = require('debug')('prisoners:server')
 const http = require('http')
 
-const socketService = require('../src/services/socket')
+const socketService = require('../src/server/socket')
 
 /**
  * Get port from environment and store in Express.

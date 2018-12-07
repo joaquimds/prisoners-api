@@ -1,6 +1,7 @@
 class Player {
-  constructor (id) {
+  constructor (id, remoteAddress) {
     this.id = id
+    this.remoteAddress = remoteAddress
   }
 }
 

@@ -2,9 +2,14 @@ const https = require('https')
 const querystring = require('querystring')
 const debug = require('debug')('prisoners:captcha')
 
+const enabled = process.env.RECAPTCHA_ENABLED !== 'false'
+
 module.exports = {
   verify: async (ip, token) => {
-    debug('verify', ip)
+    if (!enabled) {
+      return true
+    }
+    debug('Verify', ip)
     try {
       const data = await post('https://www.google.com/recaptcha/api/siteverify', {
         secret: process.env.RECAPTCHA_SECRET_KEY,
@@ -20,7 +25,7 @@ module.exports = {
   }
 }
 
-function post (url, data) {
+const post = (url, data) => {
   const queryString = querystring.stringify(data)
   return new Promise((resolve, reject) => {
     const req = https.request(`${url}?${queryString}`, { method: 'POST' }, (res) => {
