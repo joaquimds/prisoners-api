@@ -20,9 +20,9 @@ const socketService = {
 
   initClient: (id, client) => {
     for (const event of Object.keys(events)) {
-      client.on(event, (params) => {
+      client.on(event, async (params) => {
         try {
-          events[event](id, params, client)
+          await events[event](id, params, client)
         } catch (e) {
           debug(e.message)
         }

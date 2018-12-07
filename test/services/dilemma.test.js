@@ -2,11 +2,9 @@ const _ = require('lodash')
 const { describe, it } = require('mocha')
 const { assert } = require('chai')
 
-const { sleep } = require('../util')
-
 const dilemmaService = require('../../src/services/dilemma')
 
-describe.only('dilemma service', () => {
+describe('dilemma service', () => {
   describe('create player', () => {
     it('creates player', () => {
       const player = dilemmaService.createPlayer('::1')

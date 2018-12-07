@@ -52,6 +52,13 @@ const socketClients = {
         }
       }
     }
+  },
+
+  emitPayment: (id, success) => {
+    const client = socketClients._clients[id]
+    if (client) {
+      client.emit('payment', success)
+    }
   }
 }
 

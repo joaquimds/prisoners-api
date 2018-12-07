@@ -121,7 +121,7 @@ const checkRemoteAddresses = (players) => {
   }
 
   const proportion = maxRemoteAddressCount / players.length * 100
-  if (proportion >= maxProportionRemoteAddress) {
+  if (proportion > maxProportionRemoteAddress) {
     return false
   }
   const uniqueCount = Object.keys(remoteAddressCount).length

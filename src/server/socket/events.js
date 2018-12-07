@@ -3,6 +3,8 @@ const debug = require('debug')('prisoners:socket:events')
 const clients = require('./clients')
 const dilemmaService = require('../../services/dilemma')
 const captchaService = require('../../services/captcha')
+const paypalService = require('../../services/paypal')
+const { outcomes } = require('../../constants')
 
 module.exports = {
 
@@ -33,8 +35,14 @@ module.exports = {
     }
   },
 
-  email: (id, email) => {
-    console.log('IMPLEMENT PAYOUT', email)
+  email: async (id, email) => {
+    const dilemma = dilemmaService.getDilemma(id)
+    if (dilemma && dilemma.hasWon(id)) {
+      const paymentId = `${dilemma.id}:${id}`
+      const value = dilemma.getOutcome() === outcomes.split ? 0.5 : 1
+      const success = await paypalService.payout(paymentId, value, email)
+      clients.emitPayment(id, success)
+    }
   },
 
   disconnect: (id) => {
