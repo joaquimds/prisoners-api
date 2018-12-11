@@ -15,7 +15,9 @@ const players = [
   { id: 6, remoteAddress: '::6' }
 ]
 
-const ApplicationError = require('../../src/errors/ApplicationError')
+const ApplicationWarning = require('../../src/errors/ApplicationWarning')
+const FatalApplicationError = require('../../src/errors/FatalApplicationError')
+
 const dilemmaService = require('../../src/services/dilemma')
 
 describe('dilemma service', () => {
@@ -32,7 +34,7 @@ describe('dilemma service', () => {
         dilemmaService.activatePlayer(1)
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, ApplicationError.invalid_player_id)
+        assert.equal(e.message, FatalApplicationError.invalid_player_id)
       }
     })
 
@@ -41,7 +43,7 @@ describe('dilemma service', () => {
         dilemmaService.activatePlayer(0)
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, ApplicationError.too_few_unique_ips)
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips)
       }
     })
 
@@ -57,19 +59,19 @@ describe('dilemma service', () => {
         dilemmaService.activatePlayer(1)
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, ApplicationError.too_few_unique_ips)
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips)
       }
       try {
         dilemmaService.activatePlayer(2)
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, ApplicationError.too_few_unique_ips)
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips)
       }
       try {
         dilemmaService.activatePlayer(3)
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, ApplicationError.too_few_unique_ips)
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips)
       }
       let dilemmas = dilemmaService.activatePlayer(4)
 
@@ -92,7 +94,7 @@ describe('dilemma service', () => {
         dilemmaService.activatePlayer(5)
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, ApplicationError.too_few_unique_ips)
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips)
       }
 
       dilemmas = dilemmaService.activatePlayer(6)
@@ -120,7 +122,7 @@ describe('dilemma service', () => {
         dilemmaService.activatePlayer(0)
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, ApplicationError.too_few_unique_ips)
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips)
       }
 
       const oldDilemmas = dilemmaService.deactivatePlayer(2)

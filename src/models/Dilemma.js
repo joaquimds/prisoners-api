@@ -1,8 +1,11 @@
+const ApplicationWarning = require('../errors/ApplicationWarning')
 const ApplicationError = require('../errors/ApplicationError')
+const FatalApplicationError = require('../errors/FatalApplicationError')
 const { choices, outcomes } = require('../constants')
 
 const validChoices = Object.keys(choices).map(c => choices[c])
 const idleTime = parseFloat(process.env.DILEMMA_IDLE_SECONDS)
+const maxAge = parseFloat(process.env.DILEMMA_MAX_AGE_SECONDS)
 
 class Dilemma {
   constructor (id) {
@@ -10,6 +13,7 @@ class Dilemma {
     this.players = []
     this.choices = {}
     this.readyTimestamp = null
+    this.endTimestamp = null
   }
 
   addPlayer (player) {
@@ -19,6 +23,7 @@ class Dilemma {
     this.players.push(player)
     if (this.players.length === 2) {
       this.readyTimestamp = Date.now() + idleTime * 1000
+      this.endTimestamp = this.readyTimestamp + maxAge * 1000
     }
   }
 
@@ -26,32 +31,36 @@ class Dilemma {
     this.players = this.players.filter(p => p.id !== id)
     if (!this.isComplete()) {
       this.readyTimestamp = null
+      this.endTimestamp = null
       delete this.choices[id]
     }
   }
 
   setChoice (playerId, choice) {
     if (validChoices.indexOf(choice) === -1) {
-      throw new ApplicationError(ApplicationError.invalid_choice)
+      throw new ApplicationWarning(ApplicationWarning.invalid_choice)
     }
 
     const player = this.players.find(({ id }) => id === playerId)
     if (!player) {
-      throw new ApplicationError(ApplicationError.invalid_player_id, true)
+      throw new FatalApplicationError(FatalApplicationError.invalid_player_id)
     }
 
     if (this.isComplete()) {
-      throw new ApplicationError(ApplicationError.too_late_to_change_choice)
+      throw new ApplicationWarning(ApplicationWarning.too_late_to_change_choice)
     }
 
     if (!this.readyTimestamp || Date.now() < this.readyTimestamp) {
-      throw new ApplicationError(ApplicationError.too_early_to_choose)
+      throw new ApplicationWarning(ApplicationWarning.too_early_to_choose)
     }
 
     this.choices[playerId] = choice
   }
 
   isComplete () {
+    if (this.endTimestamp && Date.now() > this.endTimestamp) {
+      return true
+    }
     const choiceCount = Object.keys(this.choices).length
     return choiceCount === 2
   }
@@ -87,13 +96,15 @@ class Dilemma {
     const hasChosen = Boolean(this.choices[playerId])
     const hasWon = this.hasWon(playerId, outcome)
     const readyTimestamp = this.readyTimestamp
+    const endTimestamp = this.endTimestamp
 
     return {
       players,
       outcome,
       hasChosen,
       hasWon,
-      readyTimestamp
+      readyTimestamp,
+      endTimestamp
     }
   }
 }

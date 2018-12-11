@@ -6,6 +6,7 @@ const captchaService = require('../../services/captcha')
 const paypalService = require('../../services/paypal')
 const { outcomes } = require('../../constants')
 const ApplicationError = require('../../errors/ApplicationError')
+const FatalApplicationError = require('../../errors/FatalApplicationError')
 
 module.exports = {
 
@@ -16,7 +17,7 @@ module.exports = {
     const verified = await captchaService.verify(client.handshake.address, token)
     if (!verified) {
       debug('Failed captcha', client.handshake.address)
-      throw new ApplicationError(ApplicationError.failed_captcha, true)
+      throw new ApplicationError(ApplicationError.failed_captcha)
     }
 
     const newDilemmas = dilemmaService.activatePlayer(id)
@@ -30,7 +31,7 @@ module.exports = {
   choice: (id, choice) => {
     const dilemma = dilemmaService.setChoice(id, choice)
     if (!dilemma) {
-      throw new ApplicationError(ApplicationError.dilemma_not_found, true)
+      throw new FatalApplicationError(FatalApplicationError.dilemma_not_found)
     }
     clients.emitDilemmas([dilemma])
   },

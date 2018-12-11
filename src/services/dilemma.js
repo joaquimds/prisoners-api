@@ -1,7 +1,8 @@
 const _ = require('lodash')
 const debug = require('debug')('prisoners:dilemma')
 
-const ApplicationError = require('../errors/ApplicationError')
+const ApplicationWarning = require('../errors/ApplicationWarning')
+const FatalApplicationError = require('../errors/FatalApplicationError')
 const Dilemma = require('../models/Dilemma')
 const Player = require('../models/Player')
 
@@ -30,7 +31,7 @@ const dilemmaService = {
     debug('Add player', playerId)
     const player = dilemmaService._players[playerId]
     if (!player) {
-      throw new ApplicationError(ApplicationError.invalid_player_id, true)
+      throw new FatalApplicationError(FatalApplicationError.invalid_player_id)
     }
 
     dilemmaService._activePlayers[playerId] = true
@@ -65,7 +66,7 @@ const dilemmaService = {
 
     const validRemoteAddresses = checkRemoteAddresses(waitingPlayers)
     if (!validRemoteAddresses) {
-      throw new ApplicationError(ApplicationError.too_few_unique_ips)
+      throw new ApplicationWarning(ApplicationWarning.too_few_unique_ips)
     }
 
     const updated = []

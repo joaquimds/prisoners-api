@@ -3,7 +3,9 @@ const debug = require('debug')('prisoners:socket')
 
 const clients = require('./clients')
 const events = require('./events')
+const ApplicationWarning = require('../../errors/ApplicationWarning')
 const ApplicationError = require('../../errors/ApplicationError')
+const FatalApplicationError = require('../../errors/FatalApplicationError')
 
 const socketService = {
   init: (server) => {
@@ -37,11 +39,19 @@ const socketService = {
 
   handleError: (e, client) => {
     debug(e.message)
-    if (e instanceof ApplicationError) {
-      client.emit('api_error', { message: e.message, fatal: e.fatal })
+    if (e instanceof ApplicationWarning) {
+      client.emit('api_warning', { message: e.message })
       return
     }
-    client.emit('api_error', { message: 'Unknown error', fatal: true })
+    if (e instanceof ApplicationError) {
+      client.emit('api_error', { message: e.message })
+      return
+    }
+    if (e instanceof FatalApplicationError) {
+      client.emit('fatal_api_error', { message: e.message })
+      return
+    }
+    client.emit('fatal_api_error', { message: 'Unknown error' })
   }
 }
 

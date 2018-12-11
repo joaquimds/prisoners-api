@@ -1,4 +1,4 @@
-const ApplicationError = require('../../errors/ApplicationError')
+const FatalApplicationError = require('../../errors/FatalApplicationError')
 const dilemmaService = require('../../services/dilemma')
 
 const socketClients = {
@@ -25,7 +25,7 @@ const socketClients = {
     const address = client.handshake.address
     socketClients._connections[address] = socketClients._connections[address] || 0
     if (socketClients._connections[address] >= 10) {
-      throw new ApplicationError(ApplicationError.too_many_connections)
+      throw new FatalApplicationError(FatalApplicationError.too_many_connections)
     }
     socketClients._connections[address]++
   },
