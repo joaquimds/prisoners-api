@@ -122,7 +122,7 @@ describe('Dilemma', () => {
       dilemma.addPlayer(alice)
       dilemma.addPlayer(bob)
       await sleep(DILEMMA_IDLE_TIME)
-      await sleep(DILEMMA_MAX_AGE)
+      await sleep(DILEMMA_MAX_AGE + 1)
       try {
         dilemma.setChoice(0, 'Split')
         assert.fail()

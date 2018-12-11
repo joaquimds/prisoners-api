@@ -13,13 +13,13 @@ const socketService = {
   init: (server) => {
     const socket = io(server)
 
-    dilemmaService.addStatsListener((stats) => socket.emit('stats', stats))
+    dilemmaService.addStatsListener((stats) => socketService.sendStats(socket, stats))
 
     socket.on('connection', client => {
       try {
         const id = clients.addClient(client)
         socketService.addEventListeners(id, client)
-        client.emit('stats', dilemmaService.getStats())
+        socketService.sendStats(client, dilemmaService.getStats())
       } catch (e) {
         socketService.handleError(e, client)
         client.disconnect()
@@ -41,6 +41,10 @@ const socketService = {
         socketService.handleError(e, client)
       }
     })
+  },
+
+  sendStats: (socket, stats) => {
+    socket.emit('stats', stats)
   },
 
   handleError: (e, client) => {
