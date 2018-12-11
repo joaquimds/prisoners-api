@@ -3,11 +3,12 @@ const _ = require('lodash')
 const { describe, it } = require('mocha')
 const { assert } = require('chai')
 
+const ApplicationError = require('../../src/errors/ApplicationError')
 const Dilemma = require('../../src/models/Dilemma')
 const Player = require('../../src/models/Player')
 const { sleep } = require('../util')
 
-const DILEMMA_IDLE_TIME = parseFloat(process.env.DILEMMA_IDLE_TIME)
+const DILEMMA_IDLE_TIME = parseFloat(process.env.DILEMMA_IDLE_SECONDS) * 1000
 
 describe('Dilemma', () => {
   const alice = new Player(0, '::1')
@@ -39,9 +40,9 @@ describe('Dilemma', () => {
     })
 
     it('adds second player and sets readyTimestamp', () => {
-      const minReadyTimestamp = Date.now() + 1000 * DILEMMA_IDLE_TIME
+      const minReadyTimestamp = Date.now() + DILEMMA_IDLE_TIME
       dilemma.addPlayer(bob)
-      const maxReadyTimestamp = Date.now() + 1000 * DILEMMA_IDLE_TIME
+      const maxReadyTimestamp = Date.now() + DILEMMA_IDLE_TIME
       assert.deepEqual(_.omit(dilemma, ['readyTimestamp']), {
         id: 0,
         choices: {},
@@ -55,7 +56,7 @@ describe('Dilemma', () => {
         dilemma.addPlayer(new Player())
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, 'Could not add new player')
+        assert.equal(e.message, ApplicationError.could_not_add_player)
       }
     })
   })
@@ -67,7 +68,7 @@ describe('Dilemma', () => {
         dilemma.setChoice(0, 'foo')
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, 'Invalid choice')
+        assert.equal(e.message, ApplicationError.invalid_choice)
       }
     })
 
@@ -78,7 +79,7 @@ describe('Dilemma', () => {
         dilemma.setChoice(1, 'Split')
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, 'Invalid player id')
+        assert.equal(e.message, ApplicationError.invalid_player_id)
       }
     })
 
@@ -89,16 +90,16 @@ describe('Dilemma', () => {
         dilemma.setChoice(0, 'Split')
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, 'Can\'t choose yet')
+        assert.equal(e.message, ApplicationError.too_early_to_choose)
       }
       dilemma.addPlayer(bob)
       try {
         dilemma.setChoice(0, 'Split')
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, 'Can\'t choose yet')
+        assert.equal(e.message, ApplicationError.too_early_to_choose)
       }
-      await sleep(DILEMMA_IDLE_TIME * 1000)
+      await sleep(DILEMMA_IDLE_TIME)
       dilemma.setChoice(0, 'Split')
       assert.deepEqual(_.omit(dilemma, ['readyTimestamp']), {
         id: 0,
@@ -111,7 +112,7 @@ describe('Dilemma', () => {
       const dilemma = new Dilemma(0)
       dilemma.addPlayer(alice)
       dilemma.addPlayer(bob)
-      await sleep(DILEMMA_IDLE_TIME * 1000)
+      await sleep(DILEMMA_IDLE_TIME)
       dilemma.setChoice(0, 'Split')
       assert.deepEqual(dilemma.choices, { '0': 'Split' })
       dilemma.setChoice(0, 'Steal')
@@ -121,7 +122,7 @@ describe('Dilemma', () => {
       try {
         dilemma.setChoice(0, 'Split')
       } catch (e) {
-        assert.equal(e.message, 'Can\'t change choice as all players have chosen')
+        assert.equal(e.message, ApplicationError.too_late_to_change_choice)
       }
     })
   })
@@ -132,7 +133,7 @@ describe('Dilemma', () => {
       dilemma.addPlayer(alice)
       dilemma.addPlayer(bob)
       assert.ok(dilemma.readyTimestamp)
-      await sleep(DILEMMA_IDLE_TIME * 1000)
+      await sleep(DILEMMA_IDLE_TIME)
       dilemma.setChoice(0, 'Split')
       assert.deepEqual(_.omit(dilemma, ['readyTimestamp']), {
         id: 0,
@@ -153,7 +154,7 @@ describe('Dilemma', () => {
       dilemma.addPlayer(alice)
       dilemma.addPlayer(bob)
       assert.ok(dilemma.readyTimestamp)
-      await sleep(DILEMMA_IDLE_TIME * 1000)
+      await sleep(DILEMMA_IDLE_TIME)
       dilemma.setChoice(0, 'Split')
       dilemma.setChoice(1, 'Split')
       dilemma.removePlayer(0)
@@ -200,7 +201,7 @@ describe('Dilemma', () => {
     })
 
     it('shows correct summary after first choice', async () => {
-      await sleep(DILEMMA_IDLE_TIME * 1000)
+      await sleep(DILEMMA_IDLE_TIME)
       dilemma.setChoice(0, 'Split')
       assert.deepEqual(_.omit(dilemma.summary(0), 'readyTimestamp'), {
         players: 2,

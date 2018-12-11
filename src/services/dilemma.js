@@ -1,6 +1,7 @@
 const _ = require('lodash')
 const debug = require('debug')('prisoners:dilemma')
 
+const ApplicationError = require('../errors/ApplicationError')
 const Dilemma = require('../models/Dilemma')
 const Player = require('../models/Player')
 
@@ -29,7 +30,7 @@ const dilemmaService = {
     debug('Add player', playerId)
     const player = dilemmaService._players[playerId]
     if (!player) {
-      throw new Error('Player does not exist, please refresh')
+      throw new ApplicationError(ApplicationError.invalid_player_id, true)
     }
 
     dilemmaService._activePlayers[playerId] = true
@@ -56,20 +57,23 @@ const dilemmaService = {
     const players = Object.keys(dilemmaService._activePlayers).map(id => dilemmaService._players[id])
     const waitingPlayers = players.filter(player => {
       const dilemma = dilemmaService.getDilemma(player.id)
-      return !dilemma || dilemma.players.length < 2
+      if (!dilemma) {
+        return true
+      }
+      return dilemma.players.length < 2 && !dilemma.isComplete()
     })
 
     const validRemoteAddresses = checkRemoteAddresses(waitingPlayers)
     if (!validRemoteAddresses) {
-      throw new Error('Waiting for more players with unique IP addresses...')
+      throw new ApplicationError(ApplicationError.too_few_unique_ips)
     }
 
     const updated = []
-    const shuffledPlayers = shufflePlayers ? _.shuffle(waitingPlayers) : _.reverse(waitingPlayers)
+    const shuffledPlayers = shufflePlayers ? _.shuffle(waitingPlayers) : _.clone(waitingPlayers)
 
     while (shuffledPlayers.length > 1) {
-      const player = shuffledPlayers.pop()
-      const opponent = popValidOpponent(player, shuffledPlayers)
+      const player = shuffledPlayers.shift()
+      const opponent = removeValidOpponent(player, shuffledPlayers)
       if (!opponent) {
         break
       }
@@ -128,9 +132,9 @@ const checkRemoteAddresses = (players) => {
   return uniqueCount >= minUniqueRemoteAddresses
 }
 
-const popValidOpponent = (player, opponents) => {
+const removeValidOpponent = (player, opponents) => {
   if (minUniqueRemoteAddresses < 2) {
-    return opponents.pop()
+    return opponents.shift()
   }
   const index = opponents.findIndex(opponent => opponent.remoteAddress !== player.remoteAddress)
   if (index === -1) {

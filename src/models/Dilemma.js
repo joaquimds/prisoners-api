@@ -1,7 +1,8 @@
+const ApplicationError = require('../errors/ApplicationError')
 const { choices, outcomes } = require('../constants')
 
 const validChoices = Object.keys(choices).map(c => choices[c])
-const idleTime = parseFloat(process.env.DILEMMA_IDLE_TIME)
+const idleTime = parseFloat(process.env.DILEMMA_IDLE_SECONDS)
 
 class Dilemma {
   constructor (id) {
@@ -13,7 +14,7 @@ class Dilemma {
 
   addPlayer (player) {
     if (this.players.length > 1) {
-      throw new Error('Could not add new player')
+      throw new ApplicationError(ApplicationError.could_not_add_player)
     }
     this.players.push(player)
     if (this.players.length === 2) {
@@ -23,8 +24,7 @@ class Dilemma {
 
   removePlayer (id) {
     this.players = this.players.filter(p => p.id !== id)
-    const choiceCount = Object.keys(this.choices).length
-    if (choiceCount < 2) {
+    if (!this.isComplete()) {
       this.readyTimestamp = null
       delete this.choices[id]
     }
@@ -32,24 +32,28 @@ class Dilemma {
 
   setChoice (playerId, choice) {
     if (validChoices.indexOf(choice) === -1) {
-      throw new Error('Invalid choice')
+      throw new ApplicationError(ApplicationError.invalid_choice)
     }
 
     const player = this.players.find(({ id }) => id === playerId)
     if (!player) {
-      throw new Error('Invalid player id')
+      throw new ApplicationError(ApplicationError.invalid_player_id, true)
     }
 
-    const choiceCount = Object.keys(this.choices).length
-    if (this.choices[playerId] && choiceCount === this.players.length) {
-      throw new Error('Can\'t change choice as all players have chosen')
+    if (this.isComplete()) {
+      throw new ApplicationError(ApplicationError.too_late_to_change_choice)
     }
 
     if (!this.readyTimestamp || Date.now() < this.readyTimestamp) {
-      throw new Error('Can\'t choose yet')
+      throw new ApplicationError(ApplicationError.too_early_to_choose)
     }
 
     this.choices[playerId] = choice
+  }
+
+  isComplete () {
+    const choiceCount = Object.keys(this.choices).length
+    return choiceCount === 2
   }
 
   getOutcome () {

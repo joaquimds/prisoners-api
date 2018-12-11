@@ -6,6 +6,16 @@ const path = require('path')
 const program = require('commander')
 const debug = require('debug')('prisoners:command')
 
+const runCommand = async (command, ...args) => {
+  try {
+    debug('Running ' + command.name)
+    await command.run(...args)
+    debug('Command completed successfully')
+  } catch (e) {
+    debug('Error', e.message)
+  }
+}
+
 const commandDir = path.join(__dirname, '..', 'src', 'commands')
 fs.readdirSync(commandDir).forEach(filename => {
   const name = filename.split('.')[0]
@@ -18,13 +28,3 @@ fs.readdirSync(commandDir).forEach(filename => {
 })
 
 program.parse(process.argv)
-
-async function runCommand (command, ...args) {
-  try {
-    debug('Running ' + command.name)
-    await command.run(...args)
-    debug('Command completed successfully')
-  } catch (e) {
-    debug('Error', e.message)
-  }
-}

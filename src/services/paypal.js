@@ -20,7 +20,7 @@ const paypalService = {
   _paymentStatus: {},
 
   payout: async (id, value, email) => {
-    if (paypalService._paymentStatus[id]) {
+    if (paypalService._paymentStatus[id] && paypalService._paymentStatus[id] !== statuses.error) {
       return false
     }
     paypalService._paymentStatus[id] = statuses.paying

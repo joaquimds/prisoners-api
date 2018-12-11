@@ -5,23 +5,22 @@ const dilemmaService = require('../../services/dilemma')
 const captchaService = require('../../services/captcha')
 const paypalService = require('../../services/paypal')
 const { outcomes } = require('../../constants')
+const ApplicationError = require('../../errors/ApplicationError')
 
 module.exports = {
 
-  reset: (id, token, client) => {
+  reset: async (id, token, client) => {
     const oldDilemmas = dilemmaService.deactivatePlayer(id)
     clients.emitDilemmas(oldDilemmas)
 
-    const verified = captchaService.verify(client.handshake.address, token)
-    if (verified) {
-      try {
-        const newDilemmas = dilemmaService.activatePlayer(id)
-        clients.emitDilemmas(newDilemmas)
-      } catch (e) {
-        debug(e.message)
-        client.emit('dilemma_error', e.message)
-      }
+    const verified = await captchaService.verify(client.handshake.address, token)
+    if (!verified) {
+      debug('Failed captcha', client.handshake.address)
+      throw new ApplicationError(ApplicationError.failed_captcha)
     }
+
+    const newDilemmas = dilemmaService.activatePlayer(id)
+    clients.emitDilemmas(newDilemmas)
   },
 
   message: (id, message) => {
@@ -30,9 +29,10 @@ module.exports = {
 
   choice: (id, choice) => {
     const dilemma = dilemmaService.setChoice(id, choice)
-    if (dilemma) {
-      clients.emitDilemmas([dilemma])
+    if (!dilemma) {
+      throw new ApplicationError(ApplicationError.dilemma_not_found, true)
     }
+    clients.emitDilemmas([dilemma])
   },
 
   email: async (id, email) => {

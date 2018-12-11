@@ -1,3 +1,4 @@
+const ApplicationError = require('../../errors/ApplicationError')
 const dilemmaService = require('../../services/dilemma')
 
 const socketClients = {
@@ -24,18 +25,22 @@ const socketClients = {
     const address = client.handshake.address
     socketClients._connections[address] = socketClients._connections[address] || 0
     if (socketClients._connections[address] >= 10) {
-      throw new Error('Too many connections from address ' + address)
+      throw new ApplicationError(ApplicationError.too_many_connections)
     }
     socketClients._connections[address]++
+  },
+
+  emit: (clientId, event, data) => {
+    const client = socketClients._clients[clientId]
+    if (client) {
+      client.emit(event, data)
+    }
   },
 
   emitDilemmas: (dilemmas) => {
     for (const dilemma of dilemmas) {
       for (const player of dilemma.players) {
-        const client = socketClients._clients[player.id]
-        if (client) {
-          client.emit('dilemma', dilemma.summary(player.id))
-        }
+        socketClients.emit(player.id, 'dilemma', dilemma.summary(player.id))
       }
     }
   },
@@ -45,20 +50,14 @@ const socketClients = {
     if (dilemma) {
       for (const player of dilemma.players) {
         if (player.id !== senderId) {
-          const client = socketClients._clients[player.id]
-          if (client) {
-            client.emit('message', message)
-          }
+          socketClients.emit(player.id, 'message', message)
         }
       }
     }
   },
 
   emitPayment: (id, success) => {
-    const client = socketClients._clients[id]
-    if (client) {
-      client.emit('payment', success)
-    }
+    socketClients.emit(id, 'payment', success)
   }
 }
 
