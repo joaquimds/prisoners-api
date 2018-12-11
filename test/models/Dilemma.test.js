@@ -197,7 +197,7 @@ describe('Dilemma', () => {
       assert.deepEqual(dilemma.summary(0), {
         players: 0,
         outcome: 'Pending',
-        hasChosen: false,
+        choice: null,
         hasWon: false,
         readyTimestamp: null,
         endTimestamp: null
@@ -209,7 +209,7 @@ describe('Dilemma', () => {
       assert.deepEqual(dilemma.summary(0), {
         players: 1,
         outcome: 'Pending',
-        hasChosen: false,
+        choice: null,
         hasWon: false,
         readyTimestamp: null,
         endTimestamp: null
@@ -221,7 +221,7 @@ describe('Dilemma', () => {
       assert.deepEqual(simplifyDilemma(dilemma.summary(0)), {
         players: 2,
         outcome: 'Pending',
-        hasChosen: false,
+        choice: null,
         hasWon: false
       })
     })
@@ -232,13 +232,13 @@ describe('Dilemma', () => {
       assert.deepEqual(simplifyDilemma(dilemma.summary(0)), {
         players: 2,
         outcome: 'Pending',
-        hasChosen: true,
+        choice: 'Split',
         hasWon: false
       })
       assert.deepEqual(simplifyDilemma(dilemma.summary(1)), {
         players: 2,
         outcome: 'Pending',
-        hasChosen: false,
+        choice: null,
         hasWon: false
       })
     })
@@ -248,13 +248,13 @@ describe('Dilemma', () => {
       assert.deepEqual(simplifyDilemma(dilemma.summary(0)), {
         players: 2,
         outcome: 'Split',
-        hasChosen: true,
+        choice: 'Split',
         hasWon: true
       })
       assert.deepEqual(simplifyDilemma(dilemma.summary(1)), {
         players: 2,
         outcome: 'Split',
-        hasChosen: true,
+        choice: 'Split',
         hasWon: true
       })
     })
@@ -264,13 +264,13 @@ describe('Dilemma', () => {
       assert.deepEqual(simplifyDilemma(dilemma.summary(0)), {
         players: 2,
         outcome: 'Steal',
-        hasChosen: true,
+        choice: 'Split',
         hasWon: false
       })
       assert.deepEqual(simplifyDilemma(dilemma.summary(1)), {
         players: 2,
         outcome: 'Steal',
-        hasChosen: true,
+        choice: 'Steal',
         hasWon: true
       })
     })
@@ -280,13 +280,13 @@ describe('Dilemma', () => {
       assert.deepEqual(simplifyDilemma(dilemma.summary(0)), {
         players: 2,
         outcome: 'Lose',
-        hasChosen: true,
+        choice: 'Steal',
         hasWon: false
       })
       assert.deepEqual(simplifyDilemma(dilemma.summary(1)), {
         players: 2,
         outcome: 'Lose',
-        hasChosen: true,
+        choice: 'Steal',
         hasWon: false
       })
     })

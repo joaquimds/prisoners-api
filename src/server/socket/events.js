@@ -38,12 +38,13 @@ module.exports = {
 
   email: async (id, email) => {
     const dilemma = dilemmaService.getDilemma(id)
-    if (dilemma && dilemma.hasWon(id)) {
-      const paymentId = `${dilemma.id}:${id}`
-      const value = dilemma.getOutcome() === outcomes.split ? 0.5 : 1
-      const success = await paypalService.payout(paymentId, value, email)
-      clients.emitPayment(id, success)
+    if (!dilemma || !dilemma.hasWon(id)) {
+      throw new FatalApplicationError(FatalApplicationError.dilemma_not_found)
     }
+    const paymentId = `${dilemma.id}:${id}`
+    const value = dilemma.getOutcome() === outcomes.split ? 0.5 : 1
+    const success = await paypalService.payout(paymentId, value, email)
+    clients.emitPayment(id, success)
   },
 
   disconnect: (id) => {

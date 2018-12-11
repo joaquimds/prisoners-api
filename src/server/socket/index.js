@@ -4,6 +4,7 @@ const debug = require('debug')('prisoners:socket')
 const clients = require('./clients')
 const events = require('./events')
 const dilemmaService = require('../../services/dilemma')
+const paypalService = require('../../services/paypal')
 
 const ApplicationWarning = require('../../errors/ApplicationWarning')
 const ApplicationError = require('../../errors/ApplicationError')
@@ -14,12 +15,14 @@ const socketService = {
     const socket = io(server)
 
     dilemmaService.addStatsListener((stats) => socketService.sendStats(socket, stats))
+    paypalService.addFundsListener((hasFunds) => socketService.sendFundsError(socket, hasFunds))
 
     socket.on('connection', client => {
       try {
         const id = clients.addClient(client)
         socketService.addEventListeners(id, client)
         socketService.sendStats(client, dilemmaService.getStats())
+        socketService.sendFundsError(client, paypalService.hasFunds())
       } catch (e) {
         socketService.handleError(e, client)
         client.disconnect()
@@ -45,6 +48,12 @@ const socketService = {
 
   sendStats: (socket, stats) => {
     socket.emit('stats', stats)
+  },
+
+  sendFundsError: (socket, hasFunds) => {
+    if (!hasFunds) {
+      socket.emit('fatal_api_error', { message: FatalApplicationError.insufficient_funds })
+    }
   },
 
   handleError: (e, client) => {

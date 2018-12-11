@@ -93,7 +93,7 @@ class Dilemma {
   summary (playerId) {
     const players = this.players.length
     const outcome = this.getOutcome()
-    const hasChosen = Boolean(this.choices[playerId])
+    const choice = this.choices[playerId] || null
     const hasWon = this.hasWon(playerId, outcome)
     const readyTimestamp = this.readyTimestamp
     const endTimestamp = this.endTimestamp
@@ -101,7 +101,7 @@ class Dilemma {
     return {
       players,
       outcome,
-      hasChosen,
+      choice,
       hasWon,
       readyTimestamp,
       endTimestamp
