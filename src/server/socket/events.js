@@ -16,7 +16,7 @@ module.exports = {
     const verified = await captchaService.verify(client.handshake.address, token)
     if (!verified) {
       debug('Failed captcha', client.handshake.address)
-      throw new ApplicationError(ApplicationError.failed_captcha)
+      throw new ApplicationError(ApplicationError.failed_captcha, true)
     }
 
     const newDilemmas = dilemmaService.activatePlayer(id)
