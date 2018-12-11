@@ -1,10 +1,12 @@
 const _ = require('lodash')
 const debug = require('debug')('prisoners:dilemma')
+const EventEmitter = require('events')
 
 const ApplicationWarning = require('../errors/ApplicationWarning')
 const FatalApplicationError = require('../errors/FatalApplicationError')
 const Dilemma = require('../models/Dilemma')
 const Player = require('../models/Player')
+const { outcomes } = require('../constants')
 
 let _playerId = 0
 let _dilemmaId = 0
@@ -18,6 +20,16 @@ const dilemmaService = {
   _players: {},
   _activePlayers: {},
   _dilemmas: [],
+  _stats: {
+    [outcomes.split]: 0,
+    [outcomes.steal]: 0,
+    [outcomes.lose]: 0
+  },
+  _statsEmitter: new EventEmitter(),
+
+  addStatsListener: (callback) => {
+    dilemmaService._statsEmitter.on('update', (stats) => callback(stats))
+  },
 
   createPlayer: (remoteAddress) => {
     const id = _playerId++
@@ -98,6 +110,10 @@ const dilemmaService = {
     return updated
   },
 
+  getStats: () => {
+    return dilemmaService._stats
+  },
+
   getDilemma: (playerId) => {
     return dilemmaService._dilemmas.find(d => d.players.map(p => p.id).indexOf(playerId) > -1)
   },
@@ -107,7 +123,12 @@ const dilemmaService = {
     debug(`Player ${playerId} chose ${choice} in dilemma ${dilemma && dilemma.id}`)
     if (dilemma) {
       dilemma.setChoice(playerId, choice)
-      debug(`Dilemma ${dilemma.id} is ${dilemma.getOutcome()}`)
+      const outcome = dilemma.getOutcome()
+      debug(`Dilemma ${dilemma.id} is ${outcome}`)
+      if (outcome !== outcomes.pending) {
+        dilemmaService._stats[outcome]++
+        dilemmaService._statsEmitter.emit('update', dilemmaService._stats)
+      }
       return dilemma
     }
   }
