@@ -1,6 +1,17 @@
-const FatalApplicationError = require('../../errors/FatalApplicationError')
+const crypto = require('crypto')
 
+const FatalApplicationError = require('../../errors/FatalApplicationError')
 const dilemmaService = require('../../services/dilemma')
+
+const ANONYMIZE_IPS = process.env.ANONYMIZE_IPS !== 'false'
+
+const getRemoteAddress = (client) => {
+  const address = client.handshake.address
+  if (!ANONYMIZE_IPS) {
+    return address
+  }
+  return crypto.createHash('md5').update(address).digest('hex')
+}
 
 const socketClients = {
   _clients: {},
@@ -8,7 +19,7 @@ const socketClients = {
 
   addClient: (client) => {
     socketClients.recordConnection(client)
-    const { id } = dilemmaService.createPlayer(client.handshake.address)
+    const { id } = dilemmaService.createPlayer(getRemoteAddress(client))
     socketClients._clients[id] = client
     return id
   },
@@ -16,14 +27,14 @@ const socketClients = {
   removeClient: (id) => {
     const client = socketClients._clients[id]
     if (client) {
-      const address = client.handshake.address
+      const address = getRemoteAddress(client)
       socketClients._connections[address]--
     }
     delete socketClients._clients[id]
   },
 
   recordConnection: (client) => {
-    const address = client.handshake.address
+    const address = getRemoteAddress(client)
     socketClients._connections[address] = socketClients._connections[address] || 0
     if (socketClients._connections[address] >= 10) {
       throw new FatalApplicationError(FatalApplicationError.too_many_connections)

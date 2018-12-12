@@ -29,7 +29,7 @@ module.exports = {
     if (dilemma) {
       for (const player of dilemma.players) {
         if (player.id !== id) {
-          clients.sendMessage(id, message)
+          clients.sendMessage(player.id, message)
         }
       }
     }
