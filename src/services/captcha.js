@@ -2,6 +2,9 @@ const https = require('https')
 const querystring = require('querystring')
 const debug = require('debug')('prisoners:captcha')
 
+const { anonymizeIp } = require('../util')
+
+const ANONYMIZE_IPS = process.env.ANONYMIZE_IPS !== 'false'
 const enabled = process.env.RECAPTCHA_ENABLED !== 'false'
 
 module.exports = {
@@ -9,7 +12,7 @@ module.exports = {
     if (!enabled) {
       return true
     }
-    debug('Verify', ip)
+    debug('Verify', ANONYMIZE_IPS ? anonymizeIp(ip) : ip)
     try {
       const data = await post('https://www.google.com/recaptcha/api/siteverify', {
         secret: process.env.RECAPTCHA_SECRET_KEY,

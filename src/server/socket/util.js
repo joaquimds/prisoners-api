@@ -1,4 +1,4 @@
-const crypto = require('crypto')
+const { anonymizeIp } = require('../../util')
 
 const ANONYMIZE_IPS = process.env.ANONYMIZE_IPS !== 'false'
 
@@ -8,6 +8,6 @@ module.exports = {
     if (!anonymize) {
       return address
     }
-    return crypto.createHash('md5').update(address).digest('hex')
+    return anonymizeIp(address)
   }
 }

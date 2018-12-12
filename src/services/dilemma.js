@@ -13,7 +13,11 @@ let _playerId = 0
 let _dilemmaId = 0
 
 const minUniqueRemoteAddresses = parseInt(process.env.MINIMUM_UNIQUE_REMOTE_ADDRESSES, 10)
-const maxProportionRemoteAddress = parseInt(process.env.MAXIMUM_PROPORTION_REMOTE_ADDRESS, 10)
+const maxProportionRemoteAddress = Math.max(
+  parseInt(process.env.MAXIMUM_PROPORTION_REMOTE_ADDRESS, 10),
+  Math.round(100 / minUniqueRemoteAddresses)
+)
+
 const shufflePlayers = process.env.SHUFFLE_PLAYERS !== 'false'
 
 const dilemmaService = {
