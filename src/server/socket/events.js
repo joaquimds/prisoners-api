@@ -1,6 +1,7 @@
 const debug = require('debug')('prisoners:socket:events')
 
 const clients = require('./clients')
+const { getRemoteAddress } = require('./util')
 const dilemmaService = require('../../services/dilemma')
 const captchaService = require('../../services/captcha')
 const paypalService = require('../../services/paypal')
@@ -14,7 +15,7 @@ module.exports = {
     const oldDilemmas = dilemmaService.deactivatePlayer(id)
     clients.emitDilemmas(oldDilemmas)
 
-    const verified = await captchaService.verify(client.handshake.address, token)
+    const verified = await captchaService.verify(getRemoteAddress(client, false), token)
     if (!verified) {
       debug('Failed captcha', client.handshake.address)
       throw new ApplicationError(ApplicationError.failed_captcha)

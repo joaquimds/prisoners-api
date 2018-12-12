@@ -1,17 +1,6 @@
-const crypto = require('crypto')
-
 const FatalApplicationError = require('../../errors/FatalApplicationError')
 const dilemmaService = require('../../services/dilemma')
-
-const ANONYMIZE_IPS = process.env.ANONYMIZE_IPS !== 'false'
-
-const getRemoteAddress = (client) => {
-  const address = client.handshake.address
-  if (!ANONYMIZE_IPS) {
-    return address
-  }
-  return crypto.createHash('md5').update(address).digest('hex')
-}
+const { getRemoteAddress } = require('./util')
 
 const socketClients = {
   _clients: {},
