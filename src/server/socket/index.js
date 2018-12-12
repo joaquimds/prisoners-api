@@ -2,9 +2,8 @@ const io = require('socket.io')
 const debug = require('debug')('prisoners:socket')
 
 const clients = require('./clients')
+const broadcasts = require('./broadcasts')
 const events = require('./events')
-const dilemmaService = require('../../services/dilemma')
-const paypalService = require('../../services/paypal')
 
 const ApplicationWarning = require('../../errors/ApplicationWarning')
 const ApplicationError = require('../../errors/ApplicationError')
@@ -14,15 +13,13 @@ const socketService = {
   init: (server) => {
     const socket = io(server)
 
-    dilemmaService.addStatsListener((stats) => socketService.sendStats(socket, stats))
-    paypalService.addFundsListener((hasFunds) => socketService.sendFundsError(socket, hasFunds))
+    broadcasts.init(socket)
 
     socket.on('connection', client => {
       try {
         const id = clients.addClient(client)
-        socketService.addEventListeners(id, client)
-        socketService.sendStats(client, dilemmaService.getStats())
-        socketService.sendFundsError(client, paypalService.hasFunds())
+        socketService.addEventHandlers(id, client)
+        broadcasts.sendInitialValues(client)
       } catch (e) {
         socketService.handleError(e, client)
         client.disconnect()
@@ -30,13 +27,13 @@ const socketService = {
     })
   },
 
-  addEventListeners: (id, client) => {
+  addEventHandlers: (id, client) => {
     for (const event of Object.keys(events)) {
-      socketService.addEventListener(id, client, event)
+      socketService.addEventHandler(id, client, event)
     }
   },
 
-  addEventListener: (id, client, event) => {
+  addEventHandler: (id, client, event) => {
     client.on(event, async (params) => {
       try {
         await events[event](id, params, client)
@@ -44,16 +41,6 @@ const socketService = {
         socketService.handleError(e, client)
       }
     })
-  },
-
-  sendStats: (socket, stats) => {
-    socket.emit('stats', stats)
-  },
-
-  sendFundsError: (socket, hasFunds) => {
-    if (!hasFunds) {
-      socket.emit('fatal_api_error', { message: FatalApplicationError.insufficient_funds })
-    }
   },
 
   handleError: (e, client) => {

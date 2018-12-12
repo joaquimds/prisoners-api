@@ -25,11 +25,18 @@ module.exports = {
   },
 
   message: (id, message) => {
-    clients.sendMessage(id, message)
+    const dilemma = dilemmaService.getDilemma(id)
+    if (dilemma) {
+      for (const player of dilemma.players) {
+        if (player.id !== id) {
+          clients.sendMessage(id, message)
+        }
+      }
+    }
   },
 
-  choice: (id, choice) => {
-    const dilemma = dilemmaService.setChoice(id, choice)
+  choice: async (id, choice) => {
+    const dilemma = await dilemmaService.setChoice(id, choice)
     if (!dilemma) {
       throw new FatalApplicationError(FatalApplicationError.dilemma_not_found)
     }

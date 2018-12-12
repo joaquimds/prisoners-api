@@ -1,4 +1,5 @@
 const FatalApplicationError = require('../../errors/FatalApplicationError')
+
 const dilemmaService = require('../../services/dilemma')
 
 const socketClients = {
@@ -45,15 +46,8 @@ const socketClients = {
     }
   },
 
-  sendMessage: (senderId, message) => {
-    const dilemma = dilemmaService.getDilemma(senderId)
-    if (dilemma) {
-      for (const player of dilemma.players) {
-        if (player.id !== senderId) {
-          socketClients.emit(player.id, 'message', message)
-        }
-      }
-    }
+  sendMessage: (to, message) => {
+    socketClients.emit(to, 'message', message)
   },
 
   emitPayment: (id, success) => {

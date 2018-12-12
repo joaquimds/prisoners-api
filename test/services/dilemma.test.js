@@ -1,5 +1,5 @@
 const _ = require('lodash')
-const { describe, it } = require('mocha')
+const { before, after, describe, it } = require('mocha')
 const { assert } = require('chai')
 const { sleep } = require('../util')
 
@@ -18,9 +18,34 @@ const players = [
 const ApplicationWarning = require('../../src/errors/ApplicationWarning')
 const FatalApplicationError = require('../../src/errors/FatalApplicationError')
 
+const storageService = require('../../src/services/storage')
 const dilemmaService = require('../../src/services/dilemma')
 
+let savedStats
+
 describe('dilemma service', () => {
+  before(async () => {
+    try {
+      savedStats = await storageService.getData('stats')
+    } catch (e) {}
+    await storageService.removeData('stats')
+  })
+
+  after(async () => {
+    if (savedStats) {
+      await storageService.saveData('stats', savedStats)
+      return
+    }
+    await storageService.removeData('stats')
+  })
+
+  describe('get initial stats', () => {
+    it('returns stats', async () => {
+      const stats = await dilemmaService.getStats()
+      assert.deepEqual(stats, { Split: 0, Steal: 0, Lose: 0 })
+    })
+  })
+
   describe('create player', () => {
     it('creates player', () => {
       const player = dilemmaService.createPlayer(players[0].remoteAddress)
@@ -113,8 +138,8 @@ describe('dilemma service', () => {
     it('adds reactivated players to new dilemma', async () => {
       await sleep(DILEMMA_IDLE_TIME)
 
-      dilemmaService.setChoice(0, 'Split')
-      dilemmaService.setChoice(2, 'Split')
+      await dilemmaService.setChoice(0, 'Split')
+      await dilemmaService.setChoice(2, 'Split')
 
       dilemmaService.deactivatePlayer(0)
 
@@ -144,6 +169,13 @@ describe('dilemma service', () => {
 
       const dilemmas = dilemmaService.activatePlayer(2)
       assert.deepEqual(simplifyDilemmas(dilemmas), expectedDilemmas)
+    })
+  })
+
+  describe('get final stats', () => {
+    it('returns stats', async () => {
+      const stats = await dilemmaService.getStats()
+      assert.deepEqual(stats, { Split: 1, Steal: 0, Lose: 0 })
     })
   })
 })

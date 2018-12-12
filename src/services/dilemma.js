@@ -6,6 +6,7 @@ const ApplicationWarning = require('../errors/ApplicationWarning')
 const FatalApplicationError = require('../errors/FatalApplicationError')
 const Dilemma = require('../models/Dilemma')
 const Player = require('../models/Player')
+const storageService = require('./storage')
 const { outcomes } = require('../constants')
 
 let _playerId = 0
@@ -20,11 +21,7 @@ const dilemmaService = {
   _players: {},
   _activePlayers: {},
   _dilemmas: [],
-  _stats: {
-    [outcomes.split]: 0,
-    [outcomes.steal]: 0,
-    [outcomes.lose]: 0
-  },
+  _stats: null,
   _statsEmitter: new EventEmitter(),
 
   addStatsListener: (callback) => {
@@ -110,15 +107,28 @@ const dilemmaService = {
     return updated
   },
 
-  getStats: () => {
+  getStats: async () => {
+    if (!dilemmaService._stats) {
+      dilemmaService._stats = await dilemmaService.loadStats()
+    }
     return dilemmaService._stats
+  },
+
+  loadStats: async () => {
+    let stats = null
+    try {
+      stats = await storageService.getData('stats')
+    } catch (e) {
+      debug(e.message)
+    }
+    return stats || { [outcomes.split]: 0, [outcomes.lose]: 0, [outcomes.steal]: 0 }
   },
 
   getDilemma: (playerId) => {
     return dilemmaService._dilemmas.find(d => d.players.map(p => p.id).indexOf(playerId) > -1)
   },
 
-  setChoice: (playerId, choice) => {
+  setChoice: async (playerId, choice) => {
     const dilemma = dilemmaService.getDilemma(playerId)
     debug(`Player ${playerId} chose ${choice} in dilemma ${dilemma && dilemma.id}`)
     if (dilemma) {
@@ -126,11 +136,16 @@ const dilemmaService = {
       const outcome = dilemma.getOutcome()
       debug(`Dilemma ${dilemma.id} is ${outcome}`)
       if (outcome !== outcomes.pending) {
-        dilemmaService._stats[outcome]++
-        dilemmaService._statsEmitter.emit('update', dilemmaService._stats)
+        await dilemmaService.updateStats(outcome)
       }
       return dilemma
     }
+  },
+
+  updateStats: async (outcome) => {
+    dilemmaService._stats[outcome]++
+    dilemmaService._statsEmitter.emit('update', dilemmaService._stats)
+    await storageService.saveData('stats', dilemmaService._stats)
   }
 }
 

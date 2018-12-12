@@ -135,7 +135,7 @@ describe('Dilemma', () => {
       const dilemma = new Dilemma(0)
       dilemma.addPlayer(alice)
       dilemma.addPlayer(bob)
-      await sleep(DILEMMA_IDLE_TIME)
+      await sleep(DILEMMA_IDLE_TIME + 1)
       dilemma.setChoice(0, 'Split')
       assert.deepEqual(dilemma.choices, { '0': 'Split' })
       dilemma.setChoice(0, 'Steal')
