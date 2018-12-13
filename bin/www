@@ -10,8 +10,9 @@ const debug = require('debug')('prisoners:server')
 const http = require('http')
 
 const socketService = require('../src/server/socket')
+const applicationServices = require('../src/services')
 
-const start = () => {
+const start = async () => {
   /**
    * Get port from environment and store in Express.
    */
@@ -22,6 +23,8 @@ const start = () => {
   /**
    * Create HTTP server.
    */
+
+  await applicationServices.init()
 
   const server = http.createServer(app)
   socketService.init(server)

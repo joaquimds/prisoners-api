@@ -9,8 +9,8 @@ const broadcasts = {
     paypalService.addFundsListener((hasFunds) => broadcasts.sendFundsError(socket, hasFunds))
   },
 
-  sendInitialValues: async (client) => {
-    broadcasts.sendStats(client, await dilemmaService.getStats())
+  sendInitialValues: (client) => {
+    broadcasts.sendStats(client, dilemmaService.getStats())
     broadcasts.sendFundsError(client, paypalService.hasFunds())
   },
 
