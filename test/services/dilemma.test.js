@@ -51,13 +51,18 @@ describe('dilemma service', () => {
     it('creates player', () => {
       const player = dilemmaService.createPlayer(players[0].remoteAddress)
       assert.deepEqual(player, players[0])
+
+      dilemmaService.createPlayer(players[1].remoteAddress)
+      dilemmaService.createPlayer(players[2].remoteAddress)
+      dilemmaService.createPlayer(players[3].remoteAddress)
+      dilemmaService.createPlayer(players[4].remoteAddress)
     })
   })
 
   describe('activate player', () => {
     it('fails if player does not exist', () => {
       try {
-        dilemmaService.activatePlayer(1)
+        dilemmaService.activatePlayer(5)
         assert.fail()
       } catch (e) {
         assert.equal(e.message, FatalApplicationError.invalid_player_id)
@@ -70,18 +75,11 @@ describe('dilemma service', () => {
     })
 
     it('does not pair players with the same IP address', () => {
-      dilemmaService.createPlayer(players[1].remoteAddress)
       const dilemmas = dilemmaService.activatePlayer(1)
       assert.deepEqual(dilemmas, [])
     })
 
     it('adds players to a dilemma', () => {
-      dilemmaService.createPlayer(players[2].remoteAddress)
-      dilemmaService.createPlayer(players[3].remoteAddress)
-      dilemmaService.createPlayer(players[4].remoteAddress)
-      dilemmaService.createPlayer(players[5].remoteAddress)
-      dilemmaService.createPlayer(players[6].remoteAddress)
-
       const dilemmas = dilemmaService.activatePlayer(2)
 
       const expectedDilemmas = [
@@ -95,10 +93,30 @@ describe('dilemma service', () => {
       assert.deepEqual(simplifyDilemmas(dilemmas), expectedDilemmas)
     })
 
+    it('restricts by unique IP threshold if there are in-game players', () => {
+      try {
+        dilemmaService.activatePlayer(3)
+        assert.fail()
+      } catch (e) {
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips)
+      }
+    })
+
     it('restricts by unique IP threshold while high win rate', async () => {
       await sleep(DILEMMA_IDLE_TIME)
       await dilemmaService.setChoice(0, 'Split')
       await dilemmaService.setChoice(2, 'Split')
+
+      dilemmaService.deactivatePlayer(0)
+
+      const oldDilemmas = dilemmaService.deactivatePlayer(2)
+      assert.deepEqual(simplifyDilemmas(oldDilemmas), [
+        {
+          id: 0,
+          players: [],
+          choices: { '0': 'Split', '2': 'Split' }
+        }
+      ])
 
       try {
         dilemmaService.activatePlayer(3)
@@ -121,23 +139,12 @@ describe('dilemma service', () => {
     })
 
     it('adds reactivated players to new dilemma', async () => {
-      dilemmaService.deactivatePlayer(0)
-
       try {
         dilemmaService.activatePlayer(0)
         assert.fail()
       } catch (e) {
         assert.equal(e.message, ApplicationWarning.too_few_unique_ips)
       }
-
-      const oldDilemmas = dilemmaService.deactivatePlayer(2)
-      assert.deepEqual(simplifyDilemmas(oldDilemmas), [
-        {
-          id: 0,
-          players: [],
-          choices: { '0': 'Split', '2': 'Split' }
-        }
-      ])
 
       const expectedDilemmas = [
         {
@@ -152,14 +159,28 @@ describe('dilemma service', () => {
     })
 
     it('disables unique IP checking when win rate drops', async () => {
+      for (const player of players) {
+        dilemmaService.deactivatePlayer(player.id)
+      }
+
       try {
-        dilemmaService.activatePlayer(2)
+        dilemmaService.activatePlayer(0)
         assert.fail()
       } catch (e) {
         assert.equal(e.message, ApplicationWarning.too_few_unique_ips)
       }
       await sleep(600)
-      dilemmaService.activatePlayer(2)
+
+      const expectedDilemmas = [
+        {
+          id: 3,
+          players: [ players[0], players[2] ],
+          choices: {}
+        }
+      ]
+
+      const dilemmas = dilemmaService.activatePlayer(2)
+      assert.deepEqual(simplifyDilemmas(dilemmas), expectedDilemmas)
     })
   })
 

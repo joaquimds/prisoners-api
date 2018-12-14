@@ -84,7 +84,7 @@ const dilemmaService = {
       return dilemma.players.length < 2 && !dilemma.isComplete()
     })
 
-    if (dilemmaService.hasRecentWin()) {
+    if (dilemmaService.hasRecentWin() || waitingPlayers.length < players.length) {
       const validRemoteAddresses = checkRemoteAddresses(waitingPlayers)
       if (!validRemoteAddresses) {
         throw new ApplicationWarning(ApplicationWarning.too_few_unique_ips)
