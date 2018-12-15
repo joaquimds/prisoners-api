@@ -19,11 +19,11 @@ module.exports = {
   getData: (key) => (
     new Promise((resolve, reject) => {
       fs.readFile(path.join(storageDir, key), 'utf8', (err, json) => {
-        if (err) {
+        if (err && err.code !== 'ENOENT') {
           return reject(err)
         }
         try {
-          const data = JSON.parse(json)
+          const data = json ? JSON.parse(json) : null
           resolve(data)
         } catch (e) {
           reject(e)

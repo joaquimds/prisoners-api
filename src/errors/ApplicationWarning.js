@@ -1,4 +1,12 @@
 class ApplicationWarning extends Error {
+  constructor (message, detail = null) {
+    super(message)
+    this.detail = detail
+  }
+
+  toString () {
+    return this.message + (this.detail ? (' ' + this.detail) : '')
+  }
 }
 
 ApplicationWarning.invalid_choice = 'Invalid choice'

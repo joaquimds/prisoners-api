@@ -44,7 +44,7 @@ const socketService = {
   },
 
   handleError: (e, client) => {
-    debug(e.message)
+    debug(e.toString())
     if (e instanceof ApplicationWarning) {
       client.emit('api_warning', { message: e.message })
       return

@@ -37,7 +37,7 @@ class Dilemma {
   }
 
   setChoice (playerId, choice) {
-    if (validChoices.indexOf(choice) === -1) {
+    if (!validChoices.includes(choice)) {
       throw new ApplicationWarning(ApplicationWarning.invalid_choice)
     }
 
@@ -63,6 +63,10 @@ class Dilemma {
     }
     const choiceCount = Object.keys(this.choices).length
     return choiceCount === 2
+  }
+
+  isWaitingForMorePlayers () {
+    return this.players.length < 2 && !this.isComplete()
   }
 
   getOutcome () {
