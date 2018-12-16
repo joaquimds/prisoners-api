@@ -88,7 +88,8 @@ const dilemmaService = {
 
     const restrictReason = dilemmaService._shouldRestrictByRemoteAddress(waitingPlayers, activePlayers)
     if (restrictReason) {
-      const minUniqueRemoteAddresses = (dilemmaService._maxWinsInOneDay + 1) * initialMinUniqueRemoteAddresses
+      const winsPerHalf = Math.floor(dilemmaService._maxWinsInOneDay / 2)
+      const minUniqueRemoteAddresses = initialMinUniqueRemoteAddresses * (winsPerHalf + 1)
       const validRemoteAddresses = dilemmaService._checkRemoteAddresses(
         Math.min(minUniqueRemoteAddresses, 30),
         waitingPlayers.map(p => p.remoteAddress),
@@ -229,7 +230,7 @@ const dilemmaService = {
     const maxWinsSquared = dilemmaService._maxWinsInOneDay * dilemmaService._maxWinsInOneDay
     const windowMillis = Math.min(
       maxWinsSquared * initialRecentWinWindowMinutes * 60 * 1000,
-      180
+      180 * 60 * 1000
     )
     const millisSinceLastWin = now - lastWinTimestamp
     return millisSinceLastWin <= windowMillis

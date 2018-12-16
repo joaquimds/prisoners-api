@@ -125,37 +125,16 @@ describe('dilemma service', () => {
         dilemmaService.activatePlayer(1)
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 4)')
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 2)')
         assert.equal(e.detail, 'Recent win')
       }
 
-      try {
-        dilemmaService.activatePlayer(3)
-        assert.fail()
-      } catch (e) {
-        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 4)')
-        assert.equal(e.detail, 'Recent win')
-      }
-
-      try {
-        dilemmaService.activatePlayer(4)
-        assert.fail()
-      } catch (e) {
-        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 4)')
-        assert.equal(e.detail, 'Recent win')
-      }
-
-      const dilemmas = dilemmaService.activatePlayer(5)
+      const dilemmas = dilemmaService.activatePlayer(3)
 
       const expectedDilemmas = [
         {
           id: 1,
           players: [ players[1], players[3] ],
-          choices: {}
-        },
-        {
-          id: 2,
-          players: [ players[4], players[5] ],
           choices: {}
         }
       ]
@@ -169,37 +148,16 @@ describe('dilemma service', () => {
         dilemmaService.activatePlayer(0)
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 4)')
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 2)')
         assert.equal(e.detail, 'Recent win')
       }
 
-      try {
-        dilemmaService.activatePlayer(2)
-        assert.fail()
-      } catch (e) {
-        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 4)')
-        assert.equal(e.detail, 'Recent win')
-      }
-
-      try {
-        dilemmaService.activatePlayer(3)
-        assert.fail()
-      } catch (e) {
-        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 4)')
-        assert.equal(e.detail, 'Recent win')
-      }
-
-      const dilemmas = dilemmaService.activatePlayer(4)
+      const dilemmas = dilemmaService.activatePlayer(2)
 
       const expectedDilemmas = [
         {
-          id: 3,
+          id: 2,
           players: [ players[0], players[2] ],
-          choices: {}
-        },
-        {
-          id: 4,
-          players: [ players[3], players[4] ],
           choices: {}
         }
       ]
@@ -213,14 +171,14 @@ describe('dilemma service', () => {
         dilemmaService.activatePlayer(3)
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 4)')
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 2)')
         assert.equal(e.detail, 'Recent win')
       }
-      await sleep(600)
+      await sleep(300)
 
       const expectedDilemmas = [
         {
-          id: 5,
+          id: 3,
           players: [ players[3], players[4] ],
           choices: {}
         }
@@ -233,15 +191,39 @@ describe('dilemma service', () => {
 
     it('restricts by IP if IP has won in the past', async () => {
       try {
-        dilemmaService.activatePlayer(1)
+        dilemmaService.activatePlayer(0)
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 4)')
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 2)')
         assert.equal(e.detail, 'Previous winner')
       }
 
+      deactivatePlayers(players)
+    })
+
+    it('increases limits on second win', async () => {
+      dilemmaService.activatePlayer(3)
+      dilemmaService.activatePlayer(4)
+      await sleep(DILEMMA_IDLE_TIME)
+      await dilemmaService.setChoice(3, 'Split')
+      await dilemmaService.setChoice(4, 'Split')
+
+      deactivatePlayers(players)
+
+      await sleep(300)
+
       try {
-        dilemmaService.activatePlayer(2)
+        dilemmaService.activatePlayer(3)
+        assert.fail()
+      } catch (e) {
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 4)')
+        assert.equal(e.detail, 'Recent win')
+      }
+
+      await sleep(900)
+
+      try {
+        dilemmaService.activatePlayer(4)
         assert.fail()
       } catch (e) {
         assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 4)')
@@ -255,7 +237,7 @@ describe('dilemma service', () => {
   describe('get final stats', () => {
     it('returns stats', async () => {
       const stats = await dilemmaService.getStats()
-      assert.deepEqual(stats, { Split: 1, Steal: 0, Lose: 0 })
+      assert.deepEqual(stats, { Split: 2, Steal: 0, Lose: 0 })
     })
   })
 })
