@@ -59,13 +59,14 @@ describe('dilemma service', () => {
       dilemmaService.createPlayer(players[2].remoteAddress)
       dilemmaService.createPlayer(players[3].remoteAddress)
       dilemmaService.createPlayer(players[4].remoteAddress)
+      dilemmaService.createPlayer(players[5].remoteAddress)
     })
   })
 
   describe('activate player', () => {
     it('fails if player does not exist', () => {
       try {
-        dilemmaService.activatePlayer(5)
+        dilemmaService.activatePlayer(6)
         assert.fail()
       } catch (e) {
         assert.equal(e.message, FatalApplicationError.invalid_player_id)
@@ -124,7 +125,7 @@ describe('dilemma service', () => {
         dilemmaService.activatePlayer(1)
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 3)')
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 4)')
         assert.equal(e.detail, 'Recent win')
       }
 
@@ -132,16 +133,29 @@ describe('dilemma service', () => {
         dilemmaService.activatePlayer(3)
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 3)')
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 4)')
         assert.equal(e.detail, 'Recent win')
       }
 
-      const dilemmas = dilemmaService.activatePlayer(4)
+      try {
+        dilemmaService.activatePlayer(4)
+        assert.fail()
+      } catch (e) {
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 4)')
+        assert.equal(e.detail, 'Recent win')
+      }
+
+      const dilemmas = dilemmaService.activatePlayer(5)
 
       const expectedDilemmas = [
         {
           id: 1,
           players: [ players[1], players[3] ],
+          choices: {}
+        },
+        {
+          id: 2,
+          players: [ players[4], players[5] ],
           choices: {}
         }
       ]
@@ -155,7 +169,7 @@ describe('dilemma service', () => {
         dilemmaService.activatePlayer(0)
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 3)')
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 4)')
         assert.equal(e.detail, 'Recent win')
       }
 
@@ -163,19 +177,33 @@ describe('dilemma service', () => {
         dilemmaService.activatePlayer(2)
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 3)')
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 4)')
         assert.equal(e.detail, 'Recent win')
       }
 
+      try {
+        dilemmaService.activatePlayer(3)
+        assert.fail()
+      } catch (e) {
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 4)')
+        assert.equal(e.detail, 'Recent win')
+      }
+
+      const dilemmas = dilemmaService.activatePlayer(4)
+
       const expectedDilemmas = [
         {
-          id: 2,
+          id: 3,
           players: [ players[0], players[2] ],
+          choices: {}
+        },
+        {
+          id: 4,
+          players: [ players[3], players[4] ],
           choices: {}
         }
       ]
 
-      const dilemmas = dilemmaService.activatePlayer(3)
       assert.deepEqual(simplifyDilemmas(dilemmas), expectedDilemmas)
       deactivatePlayers(players)
     })
@@ -185,14 +213,14 @@ describe('dilemma service', () => {
         dilemmaService.activatePlayer(3)
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 3)')
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 4)')
         assert.equal(e.detail, 'Recent win')
       }
       await sleep(600)
 
       const expectedDilemmas = [
         {
-          id: 3,
+          id: 5,
           players: [ players[3], players[4] ],
           choices: {}
         }
@@ -208,7 +236,7 @@ describe('dilemma service', () => {
         dilemmaService.activatePlayer(1)
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 3)')
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 4)')
         assert.equal(e.detail, 'Previous winner')
       }
 
@@ -216,7 +244,7 @@ describe('dilemma service', () => {
         dilemmaService.activatePlayer(2)
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 3)')
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 4)')
         assert.equal(e.detail, 'Previous winner')
       }
 
