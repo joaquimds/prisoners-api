@@ -88,8 +88,8 @@ const dilemmaService = {
 
     const restrictReason = dilemmaService._shouldRestrictByRemoteAddress(waitingPlayers, activePlayers)
     if (restrictReason) {
-      const winsPerHalf = Math.floor(dilemmaService._maxWinsInOneDay / 2)
-      const minUniqueRemoteAddresses = initialMinUniqueRemoteAddresses * (winsPerHalf + 1)
+      const winsPerQuarter = Math.floor(dilemmaService._maxWinsInOneDay / 4)
+      const minUniqueRemoteAddresses = initialMinUniqueRemoteAddresses * (winsPerQuarter + 1)
       const validRemoteAddresses = dilemmaService._checkRemoteAddresses(
         Math.min(minUniqueRemoteAddresses, 30),
         waitingPlayers.map(p => p.remoteAddress),
