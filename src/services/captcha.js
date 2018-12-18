@@ -20,7 +20,7 @@ module.exports = {
         remoteip: ip
       })
       const json = JSON.parse(data)
-      return json.success
+      return json.success && json.score > 0.5
     } catch (e) {
       debug(e.message)
       return false

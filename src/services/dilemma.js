@@ -11,8 +11,9 @@ const { outcomes } = require('../constants')
 
 let _playerId = 0
 let _dilemmaId = 0
+let _roundId = 0
 
-const initialRecentWinWindowMinutes = parseFloat(process.env.RECENT_WIN_WINDOW_MINUTES)
+const recentWinWindowMinutes = parseFloat(process.env.RECENT_WIN_WINDOW_MINUTES)
 const initialMinUniqueRemoteAddresses = parseInt(process.env.MINIMUM_UNIQUE_REMOTE_ADDRESSES, 10)
 const maxProportionRemoteAddress = parseInt(process.env.MAXIMUM_PROPORTION_REMOTE_ADDRESS, 10)
 
@@ -26,7 +27,9 @@ const dilemmaService = {
   _dilemmas: [],
   _stats: null,
   _statsEmitter: new EventEmitter(),
-  _maxWinsInOneDay: 0,
+  _lastWinTimestamp: null,
+  _lastWinRoundId: null,
+  _minRemoteAddressesScale: 1,
   _winTimestamps: [],
 
   init: async () => {
@@ -88,8 +91,9 @@ const dilemmaService = {
 
     const restrictReason = dilemmaService._shouldRestrictByRemoteAddress(waitingPlayers, activePlayers)
     if (restrictReason) {
-      const winsPerQuarter = Math.floor(dilemmaService._maxWinsInOneDay / 4)
-      const minUniqueRemoteAddresses = initialMinUniqueRemoteAddresses * (winsPerQuarter + 1)
+      const minUniqueRemoteAddresses = Math.floor(
+        initialMinUniqueRemoteAddresses * dilemmaService._minRemoteAddressesScale
+      )
       const validRemoteAddresses = dilemmaService._checkRemoteAddresses(
         Math.min(minUniqueRemoteAddresses, 30),
         waitingPlayers.map(p => p.remoteAddress),
@@ -113,7 +117,7 @@ const dilemmaService = {
       let dilemma = dilemmaService.getDilemma(player.id)
       if (!dilemma) {
         const id = _dilemmaId++
-        dilemma = new Dilemma(id)
+        dilemma = new Dilemma(id, _roundId)
         dilemmaService._dilemmas.push(dilemma)
         dilemma.addPlayer(player)
       }
@@ -125,6 +129,9 @@ const dilemmaService = {
       dilemma.addPlayer(opponent)
 
       updated.push(dilemma)
+    }
+    if (updated.length) {
+      _roundId++
     }
     return updated
   },
@@ -157,8 +164,7 @@ const dilemmaService = {
       debug(`Dilemma ${dilemma.id} is ${outcome}`)
       if (outcome !== outcomes.pending) {
         if (outcome !== outcomes.lose) {
-          const winners = dilemma.players.filter(p => dilemma.hasWon(p.id, outcome))
-          await dilemmaService._recordWin(winners, Date.now())
+          await dilemmaService._recordWin(dilemma, outcome, Date.now())
         }
         await dilemmaService._updateStats(outcome)
       }
@@ -176,13 +182,9 @@ const dilemmaService = {
     await storageService.saveData('stats', dilemmaService._stats)
   },
 
-  _recordWin: async (winners, timestamp) => {
-    dilemmaService._winTimestamps.push(timestamp)
-    const pastDayStart = timestamp - 24 * 60 * 60 * 1000
-    dilemmaService._winTimestamps = dilemmaService._winTimestamps.filter(t => t > pastDayStart)
-    if (dilemmaService._winTimestamps.length > dilemmaService._maxWinsInOneDay) {
-      dilemmaService._maxWinsInOneDay = dilemmaService._winTimestamps.length
-    }
+  _recordWin: async (dilemma, outcome, timestamp) => {
+    const winners = dilemma.players.filter(p => dilemma.hasWon(p.id, outcome))
+    dilemmaService._updateLastWinTimestamp(dilemma.roundId, timestamp)
     for (const winner of winners) {
       const remoteAddress = winner.remoteAddress
       if (!dilemmaService._winningRemoteAddresses.includes(remoteAddress)) {
@@ -190,10 +192,26 @@ const dilemmaService = {
       }
     }
     await storageService.saveData('winMetadata', {
-      timestamps: dilemmaService._winTimestamps,
-      maxInOneDay: dilemmaService._maxWinsInOneDay,
-      remoteAddresses: dilemmaService._winningRemoteAddresses
+      lastWinTimestamp: dilemmaService._lastWinTimestamp,
+      minRemoteAddressesScale: dilemmaService._minRemoteAddressesScale,
+      winningRemoteAddresses: dilemmaService._winningRemoteAddresses
     })
+  },
+
+  _updateLastWinTimestamp: (roundId, winTimestamp) => {
+    const lastWinTimestamp = dilemmaService._lastWinTimestamp
+    dilemmaService._lastWinTimestamp = winTimestamp
+
+    if (!lastWinTimestamp || dilemmaService._lastWinRoundId === roundId) {
+      return
+    }
+
+    dilemmaService._lastWinRoundId = roundId
+
+    const windowMillis = recentWinWindowMinutes * 60 * 1000
+    const windowCount = Math.ceil((winTimestamp - lastWinTimestamp) / windowMillis)
+
+    dilemmaService._minRemoteAddressesScale = dilemmaService._minRemoteAddressesScale + 1 / windowCount
   },
 
   _checkRemoteAddresses: (minUniqueRemoteAddresses, remoteAddresses, ignoredAddresses) => {
@@ -218,21 +236,17 @@ const dilemmaService = {
       return false
     }
     const uniqueCount = Object.keys(remoteAddressCount).length
+
     return uniqueCount >= minUniqueRemoteAddresses
   },
 
   _hasRecentWin: () => {
-    const lastWinTimestamp = dilemmaService._winTimestamps[dilemmaService._winTimestamps.length - 1]
-    if (!lastWinTimestamp) {
+    if (!dilemmaService._lastWinTimestamp) {
       return false
     }
     const now = Date.now()
-    const maxWinsSquared = dilemmaService._maxWinsInOneDay * dilemmaService._maxWinsInOneDay
-    const windowMillis = Math.min(
-      maxWinsSquared * initialRecentWinWindowMinutes * 60 * 1000,
-      180 * 60 * 1000
-    )
-    const millisSinceLastWin = now - lastWinTimestamp
+    const windowMillis = recentWinWindowMinutes * 60 * 1000
+    const millisSinceLastWin = now - dilemmaService._lastWinTimestamp
     return millisSinceLastWin <= windowMillis
   },
 
@@ -243,16 +257,16 @@ const dilemmaService = {
 
   _loadWinMetadata: async () => {
     const metadata = await storageService.getData('winMetadata')
-    let maxWinsInOneDay = 0
-    let winTimestamps = []
+    let minRemoteAddressesScale = 1
+    let lastWinTimestamp = 0
     let winningRemoteAddresses = []
     if (metadata) {
-      maxWinsInOneDay = metadata.maxInOneDay || maxWinsInOneDay
-      winTimestamps = metadata.timestamps || winTimestamps
-      winningRemoteAddresses = metadata.remoteAddress || winningRemoteAddresses
+      minRemoteAddressesScale = metadata.minRemoteAddressesScale || minRemoteAddressesScale
+      lastWinTimestamp = metadata.lastWinTimestamp || lastWinTimestamp
+      winningRemoteAddresses = metadata.winningRemoteAddresses || winningRemoteAddresses
     }
-    dilemmaService._maxWinsInOneDay = maxWinsInOneDay
-    dilemmaService._winTimestamps = winTimestamps
+    dilemmaService._minRemoteAddressesScale = minRemoteAddressesScale
+    dilemmaService._lastWinTimestamp = lastWinTimestamp
     dilemmaService._winningRemoteAddresses = winningRemoteAddresses
   }
 }

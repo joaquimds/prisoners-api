@@ -20,19 +20,20 @@ describe('Dilemma', () => {
 
   describe('constructor', () => {
     it('creates instance', () => {
-      const dilemma = new Dilemma(0)
+      const dilemma = new Dilemma(0, 0)
       assert.deepEqual(dilemma, {
         id: 0,
         choices: {},
         players: [],
         readyTimestamp: null,
-        endTimestamp: null
+        endTimestamp: null,
+        roundId: 0
       })
     })
   })
 
   describe('add player', () => {
-    const dilemma = new Dilemma(0)
+    const dilemma = new Dilemma(0, 0)
 
     it('adds first player', () => {
       dilemma.addPlayer(alice)
@@ -41,7 +42,8 @@ describe('Dilemma', () => {
         choices: {},
         players: [{ id: 0, remoteAddress: '::1' }],
         readyTimestamp: null,
-        endTimestamp: null
+        endTimestamp: null,
+        roundId: 0
       })
     })
 
@@ -53,6 +55,7 @@ describe('Dilemma', () => {
       const maxEndTimestamp = maxReadyTimestamp + DILEMMA_MAX_AGE
       assert.deepEqual(_.omit(dilemma, ['readyTimestamp', 'endTimestamp']), {
         id: 0,
+        roundId: 0,
         choices: {},
         players: [{ id: 0, remoteAddress: '::1' }, { id: 1, remoteAddress: '::2' }]
       })
@@ -93,7 +96,7 @@ describe('Dilemma', () => {
     })
 
     it('does not allow early choice', async () => {
-      const dilemma = new Dilemma(0)
+      const dilemma = new Dilemma(0, 0)
       dilemma.addPlayer(alice)
       try {
         dilemma.setChoice(0, 'Split')
@@ -112,6 +115,7 @@ describe('Dilemma', () => {
       dilemma.setChoice(0, 'Split')
       assert.deepEqual(simplifyDilemma(dilemma), {
         id: 0,
+        roundId: 0,
         choices: { '0': 'Split' },
         players: [{ id: 0, remoteAddress: '::1' }, { id: 1, remoteAddress: '::2' }]
       })
@@ -152,7 +156,7 @@ describe('Dilemma', () => {
 
   describe('remove player', () => {
     it('removes player', async () => {
-      const dilemma = new Dilemma(0)
+      const dilemma = new Dilemma(0, 0)
       dilemma.addPlayer(alice)
       dilemma.addPlayer(bob)
       assert.ok(dilemma.readyTimestamp)
@@ -160,12 +164,14 @@ describe('Dilemma', () => {
       dilemma.setChoice(0, 'Split')
       assert.deepEqual(simplifyDilemma(dilemma), {
         id: 0,
+        roundId: 0,
         choices: { '0': 'Split' },
         players: [{ id: 0, remoteAddress: '::1' }, { id: 1, remoteAddress: '::2' }]
       })
       dilemma.removePlayer(0)
       assert.deepEqual(dilemma, {
         id: 0,
+        roundId: 0,
         choices: {},
         players: [{ id: 1, remoteAddress: '::2' }],
         readyTimestamp: null,
@@ -174,7 +180,7 @@ describe('Dilemma', () => {
     })
 
     it('doesn\'t remove choice if all players have chosen', async () => {
-      const dilemma = new Dilemma(0)
+      const dilemma = new Dilemma(0, 0)
       dilemma.addPlayer(alice)
       dilemma.addPlayer(bob)
       assert.ok(dilemma.readyTimestamp)
@@ -184,6 +190,7 @@ describe('Dilemma', () => {
       dilemma.removePlayer(0)
       assert.deepEqual(simplifyDilemma(dilemma), {
         id: 0,
+        roundId: 0,
         choices: { '0': 'Split', '1': 'Split' },
         players: [{ id: 1, remoteAddress: '::2' }]
       })

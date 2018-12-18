@@ -201,10 +201,21 @@ describe('dilemma service', () => {
       deactivatePlayers(players)
     })
 
-    it('increases limits on second win', async () => {
-      dilemmaService.activatePlayer(3)
+    it('increases limits on quick wins', async () => {
+      try {
+        dilemmaService.activatePlayer(0)
+      } catch (e) {}
+      dilemmaService.activatePlayer(2)
+      try {
+        dilemmaService.activatePlayer(3)
+      } catch (e) {
+        assert.equal(e.detail, 'Active players')
+      }
       dilemmaService.activatePlayer(4)
       await sleep(DILEMMA_IDLE_TIME)
+
+      await dilemmaService.setChoice(0, 'Split')
+      await dilemmaService.setChoice(2, 'Split')
       await dilemmaService.setChoice(3, 'Split')
       await dilemmaService.setChoice(4, 'Split')
 
@@ -217,27 +228,49 @@ describe('dilemma service', () => {
         assert.fail()
       } catch (e) {
         assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 4)')
-        assert.equal(e.detail, 'Recent win')
-      }
-
-      await sleep(900)
-
-      try {
-        dilemmaService.activatePlayer(4)
-        assert.fail()
-      } catch (e) {
-        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 4)')
         assert.equal(e.detail, 'Previous winner')
       }
 
       deactivatePlayers(players)
+    })
+
+    it('increases limits more slowly if win happens in second window', async () => {
+      try {
+        dilemmaService.activatePlayer(0)
+      } catch (e) {}
+      try {
+        dilemmaService.activatePlayer(1)
+      } catch (e) {}
+      try {
+        dilemmaService.activatePlayer(2)
+      } catch (e) {}
+      try {
+        dilemmaService.activatePlayer(3)
+      } catch (e) {}
+      dilemmaService.activatePlayer(4)
+      await sleep(DILEMMA_IDLE_TIME * 2)
+
+      await dilemmaService.setChoice(0, 'Split')
+      await dilemmaService.setChoice(2, 'Split')
+      await dilemmaService.setChoice(1, 'Split')
+      await dilemmaService.setChoice(3, 'Split')
+
+      deactivatePlayers(players)
+
+      try {
+        dilemmaService.activatePlayer(0)
+        assert.fail()
+      } catch (e) {
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 5)')
+        assert.equal(e.detail, 'Recent win')
+      }
     })
   })
 
   describe('get final stats', () => {
     it('returns stats', async () => {
       const stats = await dilemmaService.getStats()
-      assert.deepEqual(stats, { Split: 2, Steal: 0, Lose: 0 })
+      assert.deepEqual(stats, { Split: 5, Steal: 0, Lose: 0 })
     })
   })
 })
