@@ -29,7 +29,7 @@ const dilemmaService = {
   _statsEmitter: new EventEmitter(),
   _lastWinTimestamp: null,
   _minRemoteAddressesScale: 1,
-  _roundMinRemoteAddresses: {},
+  _roundMaxWins: {},
   _winTimestamps: [],
 
   init: async () => {
@@ -89,11 +89,14 @@ const dilemmaService = {
       activePlayers.push(player)
     }
 
-    const minUniqueRemoteAddresses = Math.floor(initialMinUniqueRemoteAddresses * dilemmaService._minRemoteAddressesScale)
+    const minUniqueRemoteAddresses = Math.min(
+      Math.floor(initialMinUniqueRemoteAddresses * dilemmaService._minRemoteAddressesScale),
+      30
+    )
     const restrictReason = dilemmaService._shouldRestrictByRemoteAddress(waitingPlayers, activePlayers)
     if (restrictReason) {
       const validRemoteAddresses = dilemmaService._checkRemoteAddresses(
-        Math.min(minUniqueRemoteAddresses, 30),
+        minUniqueRemoteAddresses,
         waitingPlayers.map(p => p.remoteAddress),
         activePlayers.map(p => p.remoteAddress)
       )
@@ -115,7 +118,7 @@ const dilemmaService = {
       let dilemma = dilemmaService.getDilemma(player.id)
       if (!dilemma) {
         const id = _dilemmaId++
-        dilemma = new Dilemma(id, _roundId)
+        dilemma = new Dilemma(id)
         dilemmaService._dilemmas.push(dilemma)
         dilemma.addPlayer(player)
       }
@@ -125,11 +128,12 @@ const dilemmaService = {
         altDilemma.removePlayer(opponent.id)
       }
       dilemma.addPlayer(opponent)
+      dilemma.roundId = _roundId
 
       updated.push(dilemma)
     }
     if (updated.length) {
-      dilemmaService._roundMinRemoteAddresses[_roundId] = minUniqueRemoteAddresses
+      dilemmaService._roundMaxWins[_roundId] = updated.length
       _roundId++
     }
     return updated
@@ -207,10 +211,10 @@ const dilemmaService = {
 
     const windowMillis = recentWinWindowMinutes * 60 * 1000
     const windowCount = Math.ceil((winTimestamp - lastWinTimestamp) / windowMillis)
-    const roundMinRemoteAddresses = dilemmaService._roundMinRemoteAddresses[roundId]
+    const roundMaxWins = dilemmaService._roundMaxWins[roundId]
 
     dilemmaService._minRemoteAddressesScale = dilemmaService._minRemoteAddressesScale +
-      1 / windowCount / roundMinRemoteAddresses
+      1 / windowCount / roundMaxWins
   },
 
   _checkRemoteAddresses: (minUniqueRemoteAddresses, remoteAddresses, ignoredAddresses) => {

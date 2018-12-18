@@ -227,7 +227,7 @@ describe('dilemma service', () => {
         dilemmaService.activatePlayer(3)
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 3)')
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 4)')
         assert.equal(e.detail, 'Previous winner')
       }
 
@@ -267,7 +267,7 @@ describe('dilemma service', () => {
         dilemmaService.activatePlayer(0)
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 3)')
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 5)')
         assert.equal(e.detail, 'Recent win')
       }
     })

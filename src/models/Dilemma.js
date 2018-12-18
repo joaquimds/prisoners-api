@@ -8,9 +8,8 @@ const idleTime = parseFloat(process.env.DILEMMA_IDLE_SECONDS)
 const maxAge = parseFloat(process.env.DILEMMA_MAX_AGE_SECONDS)
 
 class Dilemma {
-  constructor (id, roundId) {
+  constructor (id) {
     this.id = id
-    this.roundId = roundId
     this.players = []
     this.choices = {}
     this.readyTimestamp = null
