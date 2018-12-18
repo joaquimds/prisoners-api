@@ -27,6 +27,7 @@ const dilemmaService = {
   _dilemmas: [],
   _stats: null,
   _statsEmitter: new EventEmitter(),
+  _playerCountEmitter: new EventEmitter(),
   _lastWinTimestamp: null,
   _minRemoteAddressesScale: 1,
   _roundMaxWins: {},
@@ -39,6 +40,10 @@ const dilemmaService = {
 
   addStatsListener: (callback) => {
     dilemmaService._statsEmitter.on('update', (stats) => callback(stats))
+  },
+
+  addPlayerCountListener: (callback) => {
+    dilemmaService._playerCountEmitter.on('update', (playerCount) => callback(playerCount))
   },
 
   createPlayer: (remoteAddress) => {
@@ -57,6 +62,7 @@ const dilemmaService = {
     }
 
     dilemmaService._activePlayers.set(playerId, true)
+    dilemmaService._playerCountEmitter.emit('update', dilemmaService._activePlayers.size)
 
     return dilemmaService.updateDilemmaPlayers()
   },
@@ -73,6 +79,7 @@ const dilemmaService = {
     for (const dilemma of dilemmas) {
       dilemma.removePlayer(playerId)
     }
+    dilemmaService._playerCountEmitter.emit('update', dilemmaService._activePlayers.size)
     return dilemmas
   },
 
@@ -176,6 +183,10 @@ const dilemmaService = {
       }
       return dilemma
     }
+  },
+
+  getPlayerCount: () => {
+    return dilemmaService._activePlayers.size
   },
 
   getStats: () => {
