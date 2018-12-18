@@ -15,9 +15,10 @@ module.exports = {
     const oldDilemmas = dilemmaService.deactivatePlayer(id)
     clients.emitDilemmas(oldDilemmas)
 
-    const verified = await captchaService.verify(getRemoteAddress(client, false), token)
+    const remoteAddress = getRemoteAddress(client, false)
+    const verified = await captchaService.verify(remoteAddress, token)
     if (!verified) {
-      debug('Failed captcha', client.handshake.address)
+      debug('Failed captcha', remoteAddress)
       throw new ApplicationError(ApplicationError.failed_captcha)
     }
 
