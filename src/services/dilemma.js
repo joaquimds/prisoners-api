@@ -28,8 +28,8 @@ const dilemmaService = {
   _stats: null,
   _statsEmitter: new EventEmitter(),
   _lastWinTimestamp: null,
-  _lastWinRoundId: null,
   _minRemoteAddressesScale: 1,
+  _roundMinRemoteAddresses: {},
   _winTimestamps: [],
 
   init: async () => {
@@ -89,11 +89,9 @@ const dilemmaService = {
       activePlayers.push(player)
     }
 
+    const minUniqueRemoteAddresses = Math.floor(initialMinUniqueRemoteAddresses * dilemmaService._minRemoteAddressesScale)
     const restrictReason = dilemmaService._shouldRestrictByRemoteAddress(waitingPlayers, activePlayers)
     if (restrictReason) {
-      const minUniqueRemoteAddresses = Math.floor(
-        initialMinUniqueRemoteAddresses * dilemmaService._minRemoteAddressesScale
-      )
       const validRemoteAddresses = dilemmaService._checkRemoteAddresses(
         Math.min(minUniqueRemoteAddresses, 30),
         waitingPlayers.map(p => p.remoteAddress),
@@ -131,6 +129,7 @@ const dilemmaService = {
       updated.push(dilemma)
     }
     if (updated.length) {
+      dilemmaService._roundMinRemoteAddresses[_roundId] = minUniqueRemoteAddresses
       _roundId++
     }
     return updated
@@ -202,16 +201,16 @@ const dilemmaService = {
     const lastWinTimestamp = dilemmaService._lastWinTimestamp
     dilemmaService._lastWinTimestamp = winTimestamp
 
-    if (!lastWinTimestamp || dilemmaService._lastWinRoundId === roundId) {
+    if (!lastWinTimestamp) {
       return
     }
 
-    dilemmaService._lastWinRoundId = roundId
-
     const windowMillis = recentWinWindowMinutes * 60 * 1000
     const windowCount = Math.ceil((winTimestamp - lastWinTimestamp) / windowMillis)
+    const roundMinRemoteAddresses = dilemmaService._roundMinRemoteAddresses[roundId]
 
-    dilemmaService._minRemoteAddressesScale = dilemmaService._minRemoteAddressesScale + 1 / windowCount
+    dilemmaService._minRemoteAddressesScale = dilemmaService._minRemoteAddressesScale +
+      1 / windowCount / roundMinRemoteAddresses
   },
 
   _checkRemoteAddresses: (minUniqueRemoteAddresses, remoteAddresses, ignoredAddresses) => {

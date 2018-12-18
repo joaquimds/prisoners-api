@@ -227,7 +227,7 @@ describe('dilemma service', () => {
         dilemmaService.activatePlayer(3)
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 4)')
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 3)')
         assert.equal(e.detail, 'Previous winner')
       }
 
@@ -235,6 +235,8 @@ describe('dilemma service', () => {
     })
 
     it('increases limits more slowly if win happens in second window', async () => {
+      await sleep(DILEMMA_IDLE_TIME)
+
       try {
         dilemmaService.activatePlayer(0)
       } catch (e) {}
@@ -248,10 +250,14 @@ describe('dilemma service', () => {
         dilemmaService.activatePlayer(3)
       } catch (e) {}
       dilemmaService.activatePlayer(4)
-      await sleep(DILEMMA_IDLE_TIME * 2)
+
+      await sleep(DILEMMA_IDLE_TIME)
 
       await dilemmaService.setChoice(0, 'Split')
       await dilemmaService.setChoice(2, 'Split')
+
+      await sleep(DILEMMA_IDLE_TIME)
+
       await dilemmaService.setChoice(1, 'Split')
       await dilemmaService.setChoice(3, 'Split')
 
@@ -261,7 +267,7 @@ describe('dilemma service', () => {
         dilemmaService.activatePlayer(0)
         assert.fail()
       } catch (e) {
-        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 5)')
+        assert.equal(e.message, ApplicationWarning.too_few_unique_ips + ' (minimum 3)')
         assert.equal(e.detail, 'Recent win')
       }
     })
