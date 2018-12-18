@@ -133,7 +133,10 @@ const dilemmaService = {
       updated.push(dilemma)
     }
     if (updated.length) {
-      dilemmaService._roundMaxWins[_roundId] = updated.length
+      dilemmaService._roundMaxWins[_roundId] = Math.max(
+        updated.length,
+        Math.floor(minUniqueRemoteAddresses / 2)
+      )
       _roundId++
     }
     return updated
