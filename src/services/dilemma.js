@@ -25,7 +25,7 @@ const dilemmaService = {
   _activePlayers: new Map(),
   _winningRemoteAddresses: [],
   _dilemmas: [],
-  _stats: null,
+  _history: null,
   _statsEmitter: new EventEmitter(),
   _playerCountEmitter: new EventEmitter(),
   _lastWinTimestamp: null,
@@ -34,12 +34,12 @@ const dilemmaService = {
   _winTimestamps: [],
 
   init: async () => {
-    await dilemmaService._loadStats()
+    await dilemmaService._loadHistory()
     await dilemmaService._loadWinMetadata()
   },
 
   addStatsListener: (callback) => {
-    dilemmaService._statsEmitter.on('update', (stats) => callback(stats))
+    dilemmaService._statsEmitter.on('update', () => callback(dilemmaService.getStats()))
   },
 
   addPlayerCountListener: (callback) => {
@@ -176,10 +176,11 @@ const dilemmaService = {
       const outcome = dilemma.getOutcome()
       debug(`Dilemma ${dilemma.id} is ${outcome}`)
       if (outcome !== outcomes.pending) {
+        const now = Date.now()
         if (outcome !== outcomes.lose) {
-          await dilemmaService._recordWin(dilemma, outcome, Date.now())
+          await dilemmaService._recordWin(dilemma, outcome, now)
         }
-        await dilemmaService._updateStats(outcome)
+        await dilemmaService._updateHistory(dilemma, outcome, now)
       }
       return dilemma
     }
@@ -190,13 +191,21 @@ const dilemmaService = {
   },
 
   getStats: () => {
-    return dilemmaService._stats
+    const stats = { [outcomes.split]: 0, [outcomes.steal]: 0, [outcomes.lose]: 0 }
+    for (const item of dilemmaService._history) {
+      stats[item.outcome]++
+    }
+    return stats
   },
 
-  _updateStats: async (outcome) => {
-    dilemmaService._stats[outcome]++
-    dilemmaService._statsEmitter.emit('update', dilemmaService._stats)
-    await storageService.saveData('stats', dilemmaService._stats)
+  _updateHistory: async (dilemma, outcome, timestamp) => {
+    dilemmaService._history.push({
+      id: dilemma.id,
+      timestamps: { start: dilemma.readyTimestamp, end: timestamp },
+      outcome
+    })
+    dilemmaService._statsEmitter.emit('update')
+    await storageService.saveData('history', dilemmaService._history)
   },
 
   _recordWin: async (dilemma, outcome, timestamp) => {
@@ -267,9 +276,9 @@ const dilemmaService = {
     return millisSinceLastWin <= windowMillis
   },
 
-  _loadStats: async () => {
-    const stats = await storageService.getData('stats')
-    dilemmaService._stats = stats || { [outcomes.split]: 0, [outcomes.lose]: 0, [outcomes.steal]: 0 }
+  _loadHistory: async () => {
+    const history = await storageService.getData('history')
+    dilemmaService._history = history || []
   },
 
   _loadWinMetadata: async () => {

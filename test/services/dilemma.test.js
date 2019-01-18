@@ -21,22 +21,22 @@ const FatalApplicationError = require('../../src/errors/FatalApplicationError')
 const storageService = require('../../src/services/storage')
 const dilemmaService = require('../../src/services/dilemma')
 
-let savedStats
+let savedHistory
 let savedMetadata
 
 describe('dilemma service', () => {
   before(async () => {
-    savedStats = await storageService.getData('stats')
+    savedHistory = await storageService.getData('history')
     savedMetadata = await storageService.getData('winMetadata')
-    await storageService.removeData('stats')
+    await storageService.removeData('history')
     await storageService.removeData('winMetadata')
   })
 
   after(async () => {
-    await storageService.removeData('stats')
+    await storageService.removeData('history')
     await storageService.removeData('winMetadata')
-    if (savedStats) {
-      await storageService.saveData('stats', savedStats)
+    if (savedHistory) {
+      await storageService.saveData('history', savedHistory)
     }
     if (savedMetadata) {
       await storageService.saveData('winMetadata', savedMetadata)
@@ -275,7 +275,7 @@ describe('dilemma service', () => {
 
   describe('get final stats', () => {
     it('returns stats', async () => {
-      const stats = await dilemmaService.getStats()
+      const stats = dilemmaService.getStats()
       assert.deepEqual(stats, { Split: 5, Steal: 0, Lose: 0 })
     })
   })

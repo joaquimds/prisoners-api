@@ -3,7 +3,7 @@ const fs = require('fs')
 
 const storageDir = path.join(__dirname, '..', '..', 'storage')
 
-module.exports = {
+const storageService = {
 
   saveData: (key, data) => (
     new Promise((resolve, reject) => {
@@ -16,21 +16,21 @@ module.exports = {
     })
   ),
 
-  getData: (key) => (
+  getRaw: (key) => (
     new Promise((resolve, reject) => {
-      fs.readFile(path.join(storageDir, key), 'utf8', (err, json) => {
+      fs.readFile(path.join(storageDir, key), 'utf8', (err, data) => {
         if (err && err.code !== 'ENOENT') {
           return reject(err)
         }
-        try {
-          const data = json ? JSON.parse(json) : null
-          resolve(data)
-        } catch (e) {
-          reject(e)
-        }
+        resolve(data)
       })
     })
   ),
+
+  getData: async (key) => {
+    const json = await storageService.getRaw(key)
+    return json ? JSON.parse(json) : null
+  },
 
   removeData: (key) => (
     new Promise((resolve, reject) => {
@@ -43,3 +43,5 @@ module.exports = {
     })
   )
 }
+
+module.exports = storageService
